@@ -1,7 +1,7 @@
-package com.reservas.controller;
+package com.reservas.catalogo.controller;
 
-import com.reservas.model.ServicioProveedor;
-import com.reservas.repository.ServicioProveedorRepository;
+import com.reservas.catalogo.model.ServicioProveedor;
+import com.reservas.catalogo.repository.ServicioProveedorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

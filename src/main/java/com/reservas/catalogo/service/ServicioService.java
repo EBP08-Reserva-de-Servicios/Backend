@@ -1,7 +1,7 @@
-package com.reservas.service;
+package com.reservas.catalogo.service;
 
-import com.reservas.model.Servicio;
-import com.reservas.repository.ServicioRepository;
+import com.reservas.catalogo.model.Servicio;
+import com.reservas.catalogo.repository.ServicioRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

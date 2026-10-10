@@ -1,6 +1,6 @@
-package com.reservas.repository;
+package com.reservas.catalogo.repository;
 
-import com.reservas.model.ServicioProveedor;
+import com.reservas.catalogo.model.ServicioProveedor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 

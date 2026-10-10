@@ -1,7 +1,7 @@
-package com.reservas.controller;
+package com.reservas.catalogo.controller;
 
-import com.reservas.model.Servicio;
-import com.reservas.service.ServicioService;
+import com.reservas.catalogo.model.Servicio;
+import com.reservas.catalogo.service.ServicioService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

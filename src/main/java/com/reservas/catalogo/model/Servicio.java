@@ -1,4 +1,4 @@
-package com.reservas.model;
+package com.reservas.catalogo.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

@@ -1,6 +1,6 @@
-package com.reservas.repository;
+package com.reservas.catalogo.repository;
 
-import com.reservas.model.Servicio;
+import com.reservas.catalogo.model.Servicio;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ServicioRepository extends JpaRepository<Servicio, Long> {

@@ -1,5 +1,8 @@
 package com.reservas.model;
 
+// TEMPORAL (refactor): se elimina en el Paso 6, cuando Disponibilidad use servicioProveedorId
+import com.reservas.catalogo.model.ServicioProveedor;
+
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;

@@ -1,10 +1,10 @@
 package com.reservas.controller;
 
 import com.reservas.model.Reserva;
-import com.reservas.model.ServicioProveedor;
+import com.reservas.catalogo.model.ServicioProveedor;
 import com.reservas.repository.ReservaRepository;
 import com.reservas.repository.DisponibilidadRepository;
-import com.reservas.repository.ServicioProveedorRepository;
+import com.reservas.catalogo.repository.ServicioProveedorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
