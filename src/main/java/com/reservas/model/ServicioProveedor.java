@@ -1,5 +1,8 @@
 package com.reservas.model;
 
+// TEMPORAL (refactor): se elimina en el Paso 5, cuando ServicioProveedor use proveedorNit
+import com.reservas.proveedores.model.Proveedor;
+
 import jakarta.persistence.*;
 
 @Entity

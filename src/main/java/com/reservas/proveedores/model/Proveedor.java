@@ -1,4 +1,4 @@
-package com.reservas.model;
+package com.reservas.proveedores.model;
 
 // TEMPORAL (refactor): se elimina en el Paso 4, cuando Proveedor use municipioId
 import com.reservas.ubicacion.model.Municipio;
