@@ -1,8 +1,5 @@
 package com.reservas.catalogo.model;
 
-// TEMPORAL (refactor): se elimina en el Paso 5, cuando ServicioProveedor use proveedorNit
-import com.reservas.proveedores.model.Proveedor;
-
 import jakarta.persistence.*;
 
 @Entity
@@ -12,10 +9,14 @@ public class ServicioProveedor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "proveedor_nit")
-    private Proveedor proveedor;
+    /**
+     * NIT del proveedor (componente proveedores).
+     * Antes era @ManyToOne Proveedor; ahora es una columna plana con el MISMO nombre.
+     */
+    @Column(name = "proveedor_nit")
+    private Long proveedorNit;
 
+    /** Esta relación SÍ se mantiene: Servicio vive en el mismo componente (catalogo). */
     @ManyToOne
     @JoinColumn(name = "servicio_id")
     private Servicio servicio;
@@ -30,12 +31,12 @@ public class ServicioProveedor {
         this.id = id;
     }
 
-    public Proveedor getProveedor() {
-        return proveedor;
+    public Long getProveedorNit() {
+        return proveedorNit;
     }
 
-    public void setProveedor(Proveedor proveedor) {
-        this.proveedor = proveedor;
+    public void setProveedorNit(Long proveedorNit) {
+        this.proveedorNit = proveedorNit;
     }
 
     public Servicio getServicio() {
@@ -53,5 +54,4 @@ public class ServicioProveedor {
     public void setPrecio(Double precio) {
         this.precio = precio;
     }
-    
 }

@@ -1,48 +1,55 @@
 package com.reservas.controller;
 
-import com.reservas.catalogo.model.ServicioProveedor;
+import com.reservas.catalogo.api.ConsultaOferta;
+import com.reservas.catalogo.api.OfertaDetalle;
 import com.reservas.model.Disponibilidad;
-import com.reservas.catalogo.repository.ServicioProveedorRepository;
 import com.reservas.repository.DisponibilidadRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
+/**
+ * Búsqueda de ofertas por servicio, municipio y disponibilidad.
+ * Se muda al componente agendamiento en el Paso 6 (decisión: opción A).
+ */
 @RestController
 @RequestMapping("/api/proveedores")
 public class BusquedaController {
 
-    @Autowired
-    private ServicioProveedorRepository servicioProveedorRepository;
+    private final ConsultaOferta consultaOferta;
+    private final DisponibilidadRepository disponibilidadRepository;
 
-    @Autowired
-    private DisponibilidadRepository disponibilidadRepository;
+    public BusquedaController(ConsultaOferta consultaOferta,
+                              DisponibilidadRepository disponibilidadRepository) {
+        this.consultaOferta = consultaOferta;
+        this.disponibilidadRepository = disponibilidadRepository;
+    }
 
     @GetMapping("/buscar")
-    public List<ServicioProveedor> buscar(
+    public List<OfertaDetalle> buscar(
             @RequestParam(required = false) Long servicioId,
             @RequestParam(required = false) Long municipioId,
             @RequestParam(required = false) LocalDate fecha,
             @RequestParam(required = false) LocalTime hora) {
 
-        List<ServicioProveedor> resultado = (servicioId != null)
-                ? servicioProveedorRepository.findByServicioId(servicioId)
-                : servicioProveedorRepository.findAll();
+        List<OfertaDetalle> resultado = (servicioId != null)
+                ? consultaOferta.listarOfertasPorServicio(servicioId)
+                : consultaOferta.listarOfertas();
 
         if (municipioId != null) {
             resultado = resultado.stream()
-                    .filter(sp -> sp.getProveedor().getMunicipioId().equals(municipioId))
+                    .filter(o -> o.proveedor().municipio().codigo().equals(municipioId))
                     .toList();
         }
 
         if (fecha != null) {
             resultado = resultado.stream()
-                    .filter(sp -> {
+                    .filter(o -> {
                         List<Disponibilidad> disponibles = disponibilidadRepository
                                 .findByServicioProveedorIdAndFechaAndEstado(
-                                        sp.getId(), fecha, "DISPONIBLE");
+                                        o.id(), fecha, "DISPONIBLE");
 
                         if (disponibles.isEmpty()) {
                             return false;
@@ -52,7 +59,7 @@ public class BusquedaController {
                             return true;
                         }
 
-                        LocalTime horaFinCita = hora.plusMinutes(sp.getServicio().getDuracion());
+                        LocalTime horaFinCita = hora.plusMinutes(o.servicio().duracion());
 
                         return disponibles.stream().anyMatch(d ->
                                 !hora.isBefore(d.getHoraInicio())

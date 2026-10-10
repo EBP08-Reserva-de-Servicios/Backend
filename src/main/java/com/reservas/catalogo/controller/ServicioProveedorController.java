@@ -1,19 +1,21 @@
 package com.reservas.catalogo.controller;
 
-import com.reservas.catalogo.model.ServicioProveedor;
-import com.reservas.catalogo.repository.ServicioProveedorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.reservas.catalogo.api.OfertaDetalle;
+import com.reservas.catalogo.service.ServicioProveedorService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/servicio-proveedor")
 public class ServicioProveedorController {
 
-    @Autowired
-    private ServicioProveedorRepository servicioProveedorRepository;
+    private final ServicioProveedorService servicioProveedorService;
+
+    public ServicioProveedorController(ServicioProveedorService servicioProveedorService) {
+        this.servicioProveedorService = servicioProveedorService;
+    }
 
     @PostMapping
-    public ServicioProveedor publicar(@RequestBody ServicioProveedor sp) {
-        return servicioProveedorRepository.save(sp);
+    public OfertaDetalle publicar(@RequestBody OfertaSolicitud solicitud) {
+        return servicioProveedorService.publicar(solicitud.aEntidad());
     }
 }
