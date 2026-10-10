@@ -41,6 +41,6 @@ public class MunicipioService implements ConsultaUbicaciones {
         Departamento d = municipio.getDepartamento();
         DepartamentoResumen departamento =
                 (d == null) ? null : new DepartamentoResumen(d.getCodigo(), d.getNombre());
-        return new MunicipioResumen(municipio.getCodigo(), municipio.getNombre(), departamento);
+        return new MunicipioResumen(municipio.getCodigo(), departamento, municipio.getNombre());
     }
 }

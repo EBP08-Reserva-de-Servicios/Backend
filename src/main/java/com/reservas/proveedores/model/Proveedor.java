@@ -1,12 +1,10 @@
 package com.reservas.proveedores.model;
 
-// TEMPORAL (refactor): se elimina en el Paso 4, cuando Proveedor use municipioId
-import com.reservas.ubicacion.model.Municipio;
-
 import jakarta.persistence.*;
 
 @Entity
 public class Proveedor {
+
     @Id
     private Long nit;
     private String razonSocial;
@@ -17,79 +15,83 @@ public class Proveedor {
     private Double calificacionPromedio;
     private Integer horasLimiteCancelacion;
 
-    @ManyToOne
-    @JoinColumn(name = "municipio_id")
-    private Municipio municipio;
+    /**
+     * Código del municipio (componente ubicacion).
+     * Antes era @ManyToOne Municipio; ahora es una columna plana.
+     * El nombre de la columna es el MISMO que usaba el @JoinColumn, así la tabla no cambia.
+     */
+    @Column(name = "municipio_id")
+    private Long municipioId;
 
-	public Long getNit() {
-		return nit;
-	}
+    public Long getNit() {
+        return nit;
+    }
 
-	public void setNit(Long nit) {
-		this.nit = nit;
-	}
+    public void setNit(Long nit) {
+        this.nit = nit;
+    }
 
-	public String getRazonSocial() {
-		return razonSocial;
-	}
+    public String getRazonSocial() {
+        return razonSocial;
+    }
 
-	public void setRazonSocial(String razonSocial) {
-		this.razonSocial = razonSocial;
-	}
+    public void setRazonSocial(String razonSocial) {
+        this.razonSocial = razonSocial;
+    }
 
-	public String getDescripcion() {
-		return descripcion;
-	}
+    public String getDescripcion() {
+        return descripcion;
+    }
 
-	public void setDescripcion(String descripcion) {
-		this.descripcion = descripcion;
-	}
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
 
-	public String getDireccion() {
-		return direccion;
-	}
+    public String getDireccion() {
+        return direccion;
+    }
 
-	public void setDireccion(String direccion) {
-		this.direccion = direccion;
-	}
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
+    }
 
-	public String getTelefono() {
-		return telefono;
-	}
+    public String getTelefono() {
+        return telefono;
+    }
 
-	public void setTelefono(String telefono) {
-		this.telefono = telefono;
-	}
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
 
-	public String getCorreo() {
-		return correo;
-	}
+    public String getCorreo() {
+        return correo;
+    }
 
-	public void setCorreo(String correo) {
-		this.correo = correo;
-	}
+    public void setCorreo(String correo) {
+        this.correo = correo;
+    }
 
-	public Double getCalificacionPromedio() {
-		return calificacionPromedio;
-	}
+    public Double getCalificacionPromedio() {
+        return calificacionPromedio;
+    }
 
-	public void setCalificacionPromedio(Double calificacionPromedio) {
-		this.calificacionPromedio = calificacionPromedio;
-	}
+    public void setCalificacionPromedio(Double calificacionPromedio) {
+        this.calificacionPromedio = calificacionPromedio;
+    }
 
-	public Integer getHorasLimiteCancelacion() {
-		return horasLimiteCancelacion;
-	}
+    public Integer getHorasLimiteCancelacion() {
+        return horasLimiteCancelacion;
+    }
 
-	public void setHorasLimiteCancelacion(Integer horasLimiteCancelacion) {
-		this.horasLimiteCancelacion = horasLimiteCancelacion;
-	}
+    public void setHorasLimiteCancelacion(Integer horasLimiteCancelacion) {
+        this.horasLimiteCancelacion = horasLimiteCancelacion;
+    }
 
-	public Municipio getMunicipio() {
-		return municipio;
-	}
+    public Long getMunicipioId() {
+        return municipioId;
+    }
 
-	public void setMunicipio(Municipio municipio) {
-		this.municipio = municipio;
-	}
+    public void setMunicipioId(Long municipioId) {
+        this.municipioId = municipioId;
+    }
 }

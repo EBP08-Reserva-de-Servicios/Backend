@@ -33,8 +33,7 @@ public class BusquedaController {
 
         if (municipioId != null) {
             resultado = resultado.stream()
-                    .filter(sp -> sp.getProveedor().getMunicipio()
-                            .getCodigo().equals(municipioId))
+                    .filter(sp -> sp.getProveedor().getMunicipioId().equals(municipioId))
                     .toList();
         }
 

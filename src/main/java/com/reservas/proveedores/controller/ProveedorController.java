@@ -1,8 +1,7 @@
 package com.reservas.proveedores.controller;
 
-import com.reservas.proveedores.model.Proveedor;
-import com.reservas.proveedores.repository.ProveedorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.reservas.proveedores.api.ProveedorDetalle;
+import com.reservas.proveedores.service.ProveedorService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,21 +10,25 @@ import java.util.List;
 @RequestMapping("/api/proveedores")
 public class ProveedorController {
 
-    @Autowired
-    private ProveedorRepository proveedorRepository;
+    private final ProveedorService proveedorService;
+
+    public ProveedorController(ProveedorService proveedorService) {
+        this.proveedorService = proveedorService;
+    }
 
     @GetMapping
-    public List<Proveedor> listar() {
-        return proveedorRepository.findAll();
+    public List<ProveedorDetalle> listar() {
+        return proveedorService.listar();
     }
 
     @GetMapping("/{nit}")
-    public Proveedor obtener(@PathVariable Long nit) {
-        return proveedorRepository.findById(nit).orElse(null);
+    public ProveedorDetalle obtener(@PathVariable Long nit) {
+        // Igual que Sprint 1: si no existe responde 200 con cuerpo vacío (mejora pendiente: 404).
+        return proveedorService.obtener(nit).orElse(null);
     }
 
     @PostMapping
-    public Proveedor crear(@RequestBody Proveedor proveedor) {
-        return proveedorRepository.save(proveedor);
+    public ProveedorDetalle crear(@RequestBody ProveedorSolicitud solicitud) {
+        return proveedorService.crear(solicitud.aEntidad());
     }
 }
