@@ -1,4 +1,4 @@
-package com.reservas.model;
+package com.reservas.agendamiento.model;
 
 // TEMPORAL (refactor): se elimina en el Paso 6, cuando Disponibilidad use servicioProveedorId
 import com.reservas.catalogo.model.ServicioProveedor;

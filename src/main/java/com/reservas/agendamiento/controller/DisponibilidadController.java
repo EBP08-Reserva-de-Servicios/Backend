@@ -1,7 +1,7 @@
-package com.reservas.controller;
+package com.reservas.agendamiento.controller;
 
-import com.reservas.model.Disponibilidad;
-import com.reservas.repository.DisponibilidadRepository;
+import com.reservas.agendamiento.model.Disponibilidad;
+import com.reservas.agendamiento.repository.DisponibilidadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;

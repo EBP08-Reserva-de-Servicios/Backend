@@ -1,6 +1,6 @@
-package com.reservas.repository;
+package com.reservas.agendamiento.repository;
 
-import com.reservas.model.Reserva;
+import com.reservas.agendamiento.model.Reserva;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;

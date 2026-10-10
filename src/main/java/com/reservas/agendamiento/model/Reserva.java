@@ -1,4 +1,4 @@
-package com.reservas.model;
+package com.reservas.agendamiento.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;

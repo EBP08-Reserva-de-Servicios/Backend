@@ -1,9 +1,9 @@
-package com.reservas.controller;
+package com.reservas.agendamiento.controller;
 
-import com.reservas.model.Reserva;
+import com.reservas.agendamiento.model.Reserva;
 import com.reservas.catalogo.model.ServicioProveedor;
-import com.reservas.repository.ReservaRepository;
-import com.reservas.repository.DisponibilidadRepository;
+import com.reservas.agendamiento.repository.ReservaRepository;
+import com.reservas.agendamiento.repository.DisponibilidadRepository;
 import com.reservas.catalogo.repository.ServicioProveedorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
