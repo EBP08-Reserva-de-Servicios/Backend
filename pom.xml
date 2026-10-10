@@ -67,6 +67,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Cifrado de contraseñas (BCrypt). Solo la librería de cifrado:
+             NO activa la seguridad de los endpoints. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
         <!-- Swagger / OpenAPI -->
         <dependency>
             <groupId>org.springdoc</groupId>
