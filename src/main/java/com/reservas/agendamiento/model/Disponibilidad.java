@@ -1,8 +1,5 @@
 package com.reservas.agendamiento.model;
 
-// TEMPORAL (refactor): se elimina en el Paso 6, cuando Disponibilidad use servicioProveedorId
-import com.reservas.catalogo.model.ServicioProveedor;
-
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -14,50 +11,62 @@ public class Disponibilidad {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "servicio_proveedor_id")
-    private ServicioProveedor servicioProveedor;
+    /**
+     * Id de la oferta (ServicioProveedor, componente catalogo).
+     * Antes era @ManyToOne ServicioProveedor; ahora es una columna plana con el MISMO nombre.
+     */
+    @Column(name = "servicio_proveedor_id")
+    private Long servicioProveedorId;
 
     private LocalDate fecha;
     private LocalTime horaInicio;
     private LocalTime horaFin;
     private String estado; // DISPONIBLE, RESERVADO o BLOQUEADO
-    
-    // getters y setters
 
     public Long getId() {
         return id;
     }
+
     public void setId(Long id) {
         this.id = id;
     }
-    public ServicioProveedor getServicioProveedor() {
-        return servicioProveedor;
+
+    public Long getServicioProveedorId() {
+        return servicioProveedorId;
     }
-    public void setServicioProveedor(ServicioProveedor servicioProveedor) {
-        this.servicioProveedor = servicioProveedor;
+
+    public void setServicioProveedorId(Long servicioProveedorId) {
+        this.servicioProveedorId = servicioProveedorId;
     }
+
     public LocalDate getFecha() {
         return fecha;
     }
+
     public void setFecha(LocalDate fecha) {
         this.fecha = fecha;
     }
+
     public LocalTime getHoraInicio() {
         return horaInicio;
     }
+
     public void setHoraInicio(LocalTime horaInicio) {
         this.horaInicio = horaInicio;
     }
+
     public LocalTime getHoraFin() {
         return horaFin;
     }
+
     public void setHoraFin(LocalTime horaFin) {
         this.horaFin = horaFin;
     }
+
     public String getEstado() {
         return estado;
     }
+
     public void setEstado(String estado) {
         this.estado = estado;
     }

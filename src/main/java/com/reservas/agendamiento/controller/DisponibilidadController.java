@@ -1,9 +1,9 @@
 package com.reservas.agendamiento.controller;
 
-import com.reservas.agendamiento.model.Disponibilidad;
-import com.reservas.agendamiento.repository.DisponibilidadRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.reservas.agendamiento.api.DisponibilidadDetalle;
+import com.reservas.agendamiento.service.DisponibilidadService;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -11,19 +11,21 @@ import java.util.List;
 @RequestMapping("/api/disponibilidad")
 public class DisponibilidadController {
 
-    @Autowired
-    private DisponibilidadRepository disponibilidadRepository;
+    private final DisponibilidadService disponibilidadService;
+
+    public DisponibilidadController(DisponibilidadService disponibilidadService) {
+        this.disponibilidadService = disponibilidadService;
+    }
 
     @GetMapping("/servicio-proveedor/{id}")
-    public List<Disponibilidad> consultar(
+    public List<DisponibilidadDetalle> consultar(
             @PathVariable Long id,
             @RequestParam LocalDate fecha) {
-        return disponibilidadRepository
-            .findByServicioProveedorIdAndFechaAndEstado(id, fecha, "DISPONIBLE");
+        return disponibilidadService.consultarDisponibles(id, fecha);
     }
 
     @PostMapping
-    public Disponibilidad crear(@RequestBody Disponibilidad d) {
-        return disponibilidadRepository.save(d);
+    public DisponibilidadDetalle crear(@RequestBody DisponibilidadSolicitud solicitud) {
+        return disponibilidadService.crear(solicitud.aEntidad());
     }
 }

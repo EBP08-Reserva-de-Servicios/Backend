@@ -1,82 +1,37 @@
 package com.reservas.agendamiento.controller;
 
 import com.reservas.agendamiento.model.Reserva;
-import com.reservas.catalogo.model.ServicioProveedor;
-import com.reservas.agendamiento.repository.ReservaRepository;
-import com.reservas.agendamiento.repository.DisponibilidadRepository;
-import com.reservas.catalogo.repository.ServicioProveedorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.reservas.agendamiento.service.ConflictoReservaException;
+import com.reservas.agendamiento.service.ReservaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/reservas")
 public class ReservaController {
 
-    @Autowired
-    private ReservaRepository reservaRepository;
+    private final ReservaService reservaService;
 
-    @Autowired
-    private DisponibilidadRepository disponibilidadRepository;
-
-    @Autowired
-    private ServicioProveedorRepository servicioProveedorRepository;
+    public ReservaController(ReservaService reservaService) {
+        this.reservaService = reservaService;
+    }
 
     @PostMapping
     public ResponseEntity<?> agendar(@RequestBody Reserva reserva) {
-        boolean hayDisponibilidad = !disponibilidadRepository
-                .findByServicioProveedorIdAndFechaAndEstado(
-                        reserva.getIdServicioProveedor(),
-                        reserva.getFecha(),
-                        "DISPONIBLE")
-                .isEmpty();
-
-        if (!hayDisponibilidad) {
-            return ResponseEntity.status(409).body(
-                    "La empresa ya no tiene disponibilidad para esa fecha, " +
-                    "elige otra opcion.");
+        try {
+            return ResponseEntity.ok(reservaService.agendar(reserva));
+        } catch (ConflictoReservaException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
         }
-
-        ServicioProveedor sp = servicioProveedorRepository
-                .findById(reserva.getIdServicioProveedor())
-                .orElse(null);
-
-        if (sp == null) {
-            return ResponseEntity.status(404).body("Servicio-proveedor no encontrado.");
-        }
-
-        int duracion = sp.getServicio().getDuracion();
-        LocalTime horaFinNueva = reserva.getHora().plusMinutes(duracion);
-
-        List<Reserva> reservasDelDia = reservaRepository
-                .findByIdServicioProveedorAndFechaAndEstadoNot(
-                        reserva.getIdServicioProveedor(),
-                        reserva.getFecha(),
-                        "CANCELADA");
-
-        boolean hayChoque = reservasDelDia.stream().anyMatch(r -> {
-            LocalTime finExistente = r.getHora().plusMinutes(duracion);
-            return reserva.getHora().isBefore(finExistente)
-                    && horaFinNueva.isAfter(r.getHora());
-        });
-
-        if (hayChoque) {
-            return ResponseEntity.status(409).body(
-                    "Ya existe una reserva en ese horario para esta empresa.");
-        }
-
-        reserva.setEstado("PENDIENTE");
-        reserva.setFechaCreacion(LocalDateTime.now());
-        Reserva guardada = reservaRepository.save(reserva);
-        return ResponseEntity.ok(guardada);
     }
 
     @GetMapping("/{codigo}")
     public Reserva obtener(@PathVariable String codigo) {
-        return reservaRepository.findById(codigo).orElse(null);
+        // Igual que Sprint 1: si no existe responde 200 con cuerpo vacío (mejora pendiente: 404).
+        return reservaService.obtener(codigo).orElse(null);
     }
 }
