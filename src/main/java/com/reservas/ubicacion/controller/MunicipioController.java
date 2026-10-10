@@ -1,7 +1,7 @@
-package com.reservas.controller;
+package com.reservas.ubicacion.controller;
 
-import com.reservas.model.Municipio;
-import com.reservas.repository.MunicipioRepository;
+import com.reservas.ubicacion.model.Municipio;
+import com.reservas.ubicacion.repository.MunicipioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

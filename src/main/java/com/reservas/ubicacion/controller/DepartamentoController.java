@@ -1,7 +1,7 @@
-package com.reservas.controller;
+package com.reservas.ubicacion.controller;
 
-import com.reservas.model.Departamento;
-import com.reservas.repository.DepartamentoRepository;
+import com.reservas.ubicacion.model.Departamento;
+import com.reservas.ubicacion.repository.DepartamentoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

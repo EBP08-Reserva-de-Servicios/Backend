@@ -1,4 +1,4 @@
-package com.reservas.model;
+package com.reservas.ubicacion.model;
 
 import jakarta.persistence.*;
 
