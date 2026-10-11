@@ -1,6 +1,7 @@
 package com.reservas.proveedores.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 public class Proveedor {
@@ -11,7 +12,11 @@ public class Proveedor {
     private String descripcion;
     private String direccion;
     private String telefono;
+
+    /** Correo de atención al cliente; también es el correo de login (acuerdo 3). */
+    @Column(unique = true)
     private String correo;
+
     private Double calificacionPromedio;
     private Integer horasLimiteCancelacion;
 
@@ -23,75 +28,94 @@ public class Proveedor {
     @Column(name = "municipio_id")
     private Long municipioId;
 
-    public Long getNit() {
-        return nit;
-    }
+    // ---------- HU-16: registro de proveedor ----------
 
-    public void setNit(Long nit) {
-        this.nit = nit;
-    }
+    /** "Tipo de servicios que presta" (texto tal como lo envía el formulario). */
+    private String tipoServicio;
 
-    public String getRazonSocial() {
-        return razonSocial;
-    }
+    /** Logo de la empresa en bytes (columna bytea). Sin @Lob a propósito. */
+    private byte[] logo;
 
-    public void setRazonSocial(String razonSocial) {
-        this.razonSocial = razonSocial;
-    }
+    /** "image/png" o "image/jpeg". */
+    private String logoTipo;
 
-    public String getDescripcion() {
-        return descripcion;
-    }
+    /** SHA-256 del logo, para detectar logos repetidos (HU-16: "no registrado previamente"). */
+    private String logoHash;
 
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
+    private String representanteNombres;
+    private String representanteApellidos;
+    private String representanteCelular;
+    private String representanteDocumento;
 
-    public String getDireccion() {
-        return direccion;
-    }
+    // ---------- HU-Seg-01 / HU-Seg-02: cuenta ----------
 
-    public void setDireccion(String direccion) {
-        this.direccion = direccion;
-    }
+    /** Hash BCrypt de la contraseña. Los proveedores precargados la tienen en null. */
+    private String clave;
 
-    public String getTelefono() {
-        return telefono;
-    }
+    /** Integer (no int): las filas que ya existen quedan en NULL. */
+    private Integer intentosFallidos;
 
-    public void setTelefono(String telefono) {
-        this.telefono = telefono;
-    }
+    private LocalDateTime bloqueadoHasta;
 
-    public String getCorreo() {
-        return correo;
-    }
+    // ---------- getters y setters ----------
 
-    public void setCorreo(String correo) {
-        this.correo = correo;
-    }
+    public Long getNit() { return nit; }
+    public void setNit(Long nit) { this.nit = nit; }
 
-    public Double getCalificacionPromedio() {
-        return calificacionPromedio;
-    }
+    public String getRazonSocial() { return razonSocial; }
+    public void setRazonSocial(String razonSocial) { this.razonSocial = razonSocial; }
 
-    public void setCalificacionPromedio(Double calificacionPromedio) {
-        this.calificacionPromedio = calificacionPromedio;
-    }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
-    public Integer getHorasLimiteCancelacion() {
-        return horasLimiteCancelacion;
-    }
+    public String getDireccion() { return direccion; }
+    public void setDireccion(String direccion) { this.direccion = direccion; }
 
-    public void setHorasLimiteCancelacion(Integer horasLimiteCancelacion) {
-        this.horasLimiteCancelacion = horasLimiteCancelacion;
-    }
+    public String getTelefono() { return telefono; }
+    public void setTelefono(String telefono) { this.telefono = telefono; }
 
-    public Long getMunicipioId() {
-        return municipioId;
-    }
+    public String getCorreo() { return correo; }
+    public void setCorreo(String correo) { this.correo = correo; }
 
-    public void setMunicipioId(Long municipioId) {
-        this.municipioId = municipioId;
-    }
+    public Double getCalificacionPromedio() { return calificacionPromedio; }
+    public void setCalificacionPromedio(Double calificacionPromedio) { this.calificacionPromedio = calificacionPromedio; }
+
+    public Integer getHorasLimiteCancelacion() { return horasLimiteCancelacion; }
+    public void setHorasLimiteCancelacion(Integer horasLimiteCancelacion) { this.horasLimiteCancelacion = horasLimiteCancelacion; }
+
+    public Long getMunicipioId() { return municipioId; }
+    public void setMunicipioId(Long municipioId) { this.municipioId = municipioId; }
+
+    public String getTipoServicio() { return tipoServicio; }
+    public void setTipoServicio(String tipoServicio) { this.tipoServicio = tipoServicio; }
+
+    public byte[] getLogo() { return logo; }
+    public void setLogo(byte[] logo) { this.logo = logo; }
+
+    public String getLogoTipo() { return logoTipo; }
+    public void setLogoTipo(String logoTipo) { this.logoTipo = logoTipo; }
+
+    public String getLogoHash() { return logoHash; }
+    public void setLogoHash(String logoHash) { this.logoHash = logoHash; }
+
+    public String getRepresentanteNombres() { return representanteNombres; }
+    public void setRepresentanteNombres(String representanteNombres) { this.representanteNombres = representanteNombres; }
+
+    public String getRepresentanteApellidos() { return representanteApellidos; }
+    public void setRepresentanteApellidos(String representanteApellidos) { this.representanteApellidos = representanteApellidos; }
+
+    public String getRepresentanteCelular() { return representanteCelular; }
+    public void setRepresentanteCelular(String representanteCelular) { this.representanteCelular = representanteCelular; }
+
+    public String getRepresentanteDocumento() { return representanteDocumento; }
+    public void setRepresentanteDocumento(String representanteDocumento) { this.representanteDocumento = representanteDocumento; }
+
+    public String getClave() { return clave; }
+    public void setClave(String clave) { this.clave = clave; }
+
+    public Integer getIntentosFallidos() { return intentosFallidos; }
+    public void setIntentosFallidos(Integer intentosFallidos) { this.intentosFallidos = intentosFallidos; }
+
+    public LocalDateTime getBloqueadoHasta() { return bloqueadoHasta; }
+    public void setBloqueadoHasta(LocalDateTime bloqueadoHasta) { this.bloqueadoHasta = bloqueadoHasta; }
 }
