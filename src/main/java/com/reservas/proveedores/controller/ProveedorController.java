@@ -1,9 +1,11 @@
 package com.reservas.proveedores.controller;
 
 import com.reservas.proveedores.api.ProveedorDetalle;
+import com.reservas.proveedores.model.Proveedor;
 import com.reservas.proveedores.service.ProveedorService;
 import com.reservas.proveedores.service.RegistroProveedorException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +31,16 @@ public class ProveedorController {
     public ProveedorDetalle obtener(@PathVariable Long nit) {
         // Igual que Sprint 1: si no existe responde 200 con cuerpo vacío (mejora pendiente: 404).
         return proveedorService.obtener(nit).orElse(null);
+    }
+
+    /** Imagen del logo del proveedor (HU-16). 404 si no tiene logo. */
+    @GetMapping("/{nit}/logo")
+    public ResponseEntity<byte[]> logo(@PathVariable Long nit) {
+        return proveedorService.obtenerConLogo(nit)
+                .map((Proveedor p) -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(p.getLogoTipo()))
+                        .body(p.getLogo()))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping

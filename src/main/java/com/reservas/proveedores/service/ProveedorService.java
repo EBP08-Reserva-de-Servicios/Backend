@@ -62,6 +62,11 @@ public class ProveedorService implements ConsultaProveedores, CuentaAutenticable
         return aDetalle(proveedorRepository.save(proveedor));
     }
 
+    /** Proveedor con logo, para servir la imagen en GET /api/proveedores/{nit}/logo. */
+    public Optional<Proveedor> obtenerConLogo(Long nit) {
+        return proveedorRepository.findById(nit).filter(p -> p.getLogo() != null);
+    }
+
     // ---------------------------------------------------------------
     // Registro (HU-16 y HU-Seg-01)
     // ---------------------------------------------------------------
@@ -249,12 +254,16 @@ public class ProveedorService implements ConsultaProveedores, CuentaAutenticable
                 ? null
                 : consultaUbicaciones.obtenerMunicipio(p.getMunicipioId()).orElse(null);
 
+        // Solo la dirección del logo; los bytes se sirven aparte en GET /api/proveedores/{nit}/logo
+        String logoUrl = (p.getLogo() == null) ? null : "/api/proveedores/" + p.getNit() + "/logo";
+
         return new ProveedorDetalle(
                 p.getCalificacionPromedio(),
                 p.getCorreo(),
                 p.getDescripcion(),
                 p.getDireccion(),
                 p.getHorasLimiteCancelacion(),
+                logoUrl,
                 municipio,
                 p.getNit(),
                 p.getRazonSocial(),
