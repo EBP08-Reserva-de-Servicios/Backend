@@ -136,6 +136,13 @@ public class ClienteService implements ConsultaClientes, CuentaAutenticable {
     }
 
     @Override
+    public Optional<LocalDateTime> bloqueadaHasta(String correo) {
+        return clienteRepository.findByCorreo(correo)
+                .map(c -> c.getBloqueadoHasta())
+                .filter(hasta -> hasta.isAfter(LocalDateTime.now()));
+    }
+
+    @Override
     public void registrarIntentoFallido(String correo) {
         clienteRepository.findByCorreo(correo).ifPresent(c -> {
             int intentos = c.getIntentosFallidos() + 1;

@@ -1,6 +1,7 @@
 package com.reservas.compartido;
 
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 /**
  * Contrato que cumple cada tipo de cuenta que puede iniciar sesión.
@@ -15,8 +16,11 @@ public interface CuentaAutenticable {
     Optional<CuentaResumen> buscarPorCorreo(String correo);
 
     boolean validarCredenciales(String correo, String clave);
-
+    
     boolean estaBloqueada(String correo);
+
+    /** Hasta cuándo dura el bloqueo; vacío si la cuenta no existe o no está bloqueada ahora. */
+    Optional<LocalDateTime> bloqueadaHasta(String correo);
 
     void registrarIntentoFallido(String correo);
 
