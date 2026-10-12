@@ -20,8 +20,8 @@ public class ClienteService implements ConsultaClientes, CuentaAutenticable {
     private static final int MAX_INTENTOS = 3;
     private static final int MINUTOS_BLOQUEO = 15;
 
-    private static final String REGEX_CORREO = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
-    private static final String REGEX_CELULAR = "^3\\d{9}$";
+    private static final String REGEX_CORREO = "^[^@\\s]+@[^@\\s]+$";
+    private static final String REGEX_CELULAR = "^\\d{10}$";
 
     private final ClienteRepository clienteRepository;
     private final PasswordEncoder passwordEncoder;
@@ -45,14 +45,13 @@ public class ClienteService implements ConsultaClientes, CuentaAutenticable {
         List<String> errores = new ArrayList<>();
 
         if (vacio(cliente.getNombres()))         errores.add("El nombre es obligatorio.");
-        if (vacio(cliente.getApellidos()))       errores.add("El apellido es obligatorio.");
-        if (vacio(cliente.getTipoDocumento()))   errores.add("El tipo de documento es obligatorio.");
+        if (vacio(cliente.getApellidos()))      errores.add("El apellido es obligatorio.");
         if (vacio(cliente.getNumeroDocumento())) errores.add("El número de documento es obligatorio.");
 
         if (vacio(cliente.getTelefono())) {
             errores.add("El celular es obligatorio.");
         } else if (!cliente.getTelefono().matches(REGEX_CELULAR)) {
-            errores.add("El celular debe tener 10 dígitos y empezar por 3.");
+            errores.add("El celular debe tener 10 dígitos numéricos.");
         }
 
         if (vacio(cliente.getCorreo())) {
@@ -65,10 +64,10 @@ public class ClienteService implements ConsultaClientes, CuentaAutenticable {
             errores.add("La contraseña es obligatoria.");
         } else {
             // Las 5 reglas SOLO si hay clave (evita NullPointerException)
-            if (clavePlana.length() < 8)                 errores.add("La contraseña debe tener al menos 8 caracteres.");
-            if (!clavePlana.matches(".*[A-Z].*"))        errores.add("La contraseña debe incluir al menos una letra mayúscula.");
-            if (!clavePlana.matches(".*[a-z].*"))        errores.add("La contraseña debe incluir al menos una letra minúscula.");
-            if (!clavePlana.matches(".*\\d.*"))          errores.add("La contraseña debe incluir al menos un número.");
+            if (clavePlana.length() < 8)                errores.add("La contraseña debe tener al menos 8 caracteres.");
+            if (!clavePlana.matches(".*[A-Z].*"))       errores.add("La contraseña debe incluir al menos una letra mayúscula.");
+            if (!clavePlana.matches(".*[a-z].*"))       errores.add("La contraseña debe incluir al menos una letra minúscula.");
+            if (!clavePlana.matches(".*\\d.*"))         errores.add("La contraseña debe incluir al menos un número.");
             if (!clavePlana.matches(".*[^A-Za-z0-9].*")) errores.add("La contraseña debe incluir al menos un carácter especial.");
         }
 
@@ -79,10 +78,10 @@ public class ClienteService implements ConsultaClientes, CuentaAutenticable {
         // 2) Duplicados (solo si los datos ya son válidos)
         List<String> duplicados = new ArrayList<>();
         if (clienteRepository.existsByCorreo(cliente.getCorreo())) {
-            duplicados.add("Este correo ya está registrado.");
+            duplicados.add("Este correo ya está en uso. Intenta con otro o inicia sesión");
         }
         if (clienteRepository.existsByNumeroDocumento(cliente.getNumeroDocumento())) {
-            duplicados.add("Este número de documento ya está registrado.");
+            duplicados.add("Este documento ya está asociado a una cuenta");
         }
         if (!duplicados.isEmpty()) {
             throw new RegistroClienteException(RegistroClienteException.Tipo.DUPLICADO, duplicados);
