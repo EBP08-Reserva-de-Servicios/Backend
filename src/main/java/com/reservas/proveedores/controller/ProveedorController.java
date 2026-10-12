@@ -1,10 +1,16 @@
 package com.reservas.proveedores.controller;
 
 import com.reservas.proveedores.api.ProveedorDetalle;
+import com.reservas.proveedores.model.Proveedor;
 import com.reservas.proveedores.service.ProveedorService;
+import com.reservas.proveedores.service.RegistroProveedorException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/proveedores")
@@ -27,8 +33,33 @@ public class ProveedorController {
         return proveedorService.obtener(nit).orElse(null);
     }
 
+    /** Imagen del logo del proveedor (HU-16). 404 si no tiene logo. */
+    @GetMapping("/{nit}/logo")
+    public ResponseEntity<byte[]> logo(@PathVariable Long nit) {
+        return proveedorService.obtenerConLogo(nit)
+                .map((Proveedor p) -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(p.getLogoTipo()))
+                        .body(p.getLogo()))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ProveedorDetalle crear(@RequestBody ProveedorSolicitud solicitud) {
         return proveedorService.crear(solicitud.aEntidad());
+    }
+
+    /** HU-16 / HU-Seg-01: registro de proveedor con cuenta (clave cifrada). */
+    @PostMapping("/registro")
+    public ResponseEntity<?> registrar(@RequestBody ProveedorRegistroSolicitud solicitud) {
+        try {
+            ProveedorDetalle creado = proveedorService.registrar(
+                    solicitud.aEntidad(), solicitud.nit(), solicitud.logo(), solicitud.clave());
+            return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+        } catch (RegistroProveedorException e) {
+            HttpStatus estado = (e.getTipo() == RegistroProveedorException.Tipo.DUPLICADO)
+                    ? HttpStatus.CONFLICT        // 409: correo, teléfono, NIT, empresa o logo ya registrados
+                    : HttpStatus.BAD_REQUEST;    // 400: datos que no cumplen las reglas
+            return ResponseEntity.status(estado).body(Map.of("errores", e.getErrores()));
+        }
     }
 }
