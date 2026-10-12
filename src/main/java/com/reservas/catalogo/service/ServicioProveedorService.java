@@ -55,7 +55,8 @@ public class ServicioProveedorService implements ConsultaOferta {
                 ? null
                 : consultaProveedores.obtenerProveedor(sp.getProveedorNit()).orElse(null);
 
-        return new OfertaDetalle(sp.getId(), sp.getPrecio(), proveedor, aResumen(sp.getServicio()));
+        return new OfertaDetalle(sp.getDescripcion(), sp.getDuracion(), sp.getId(), sp.getPrecio(),
+                proveedor, aResumen(sp.getServicio()));
     }
 
     private ServicioResumen aResumen(Servicio s) {

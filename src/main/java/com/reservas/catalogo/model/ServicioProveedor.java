@@ -23,6 +23,12 @@ public class ServicioProveedor {
 
     private Double precio;
 
+    /** HU-19: duración propia de la oferta, en minutos. Integer (no int): las ofertas existentes quedan en NULL. */
+    private Integer duracion;
+
+    /** HU-19: descripción propia de la oferta. */
+    private String descripcion;
+
     public Long getId() {
         return id;
     }
@@ -53,5 +59,21 @@ public class ServicioProveedor {
 
     public void setPrecio(Double precio) {
         this.precio = precio;
+    }
+
+    public Integer getDuracion() {
+        return duracion;
+    }
+
+    public void setDuracion(Integer duracion) {
+        this.duracion = duracion;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
     }
 }
