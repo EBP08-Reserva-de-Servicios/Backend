@@ -221,6 +221,13 @@ public class ProveedorService implements ConsultaProveedores, CuentaAutenticable
                 .orElse(false);
     }
 
+        @Override
+    public Optional<LocalDateTime> bloqueadaHasta(String correo) {
+        return proveedorRepository.findByCorreo(correo)
+                .map(p -> p.getBloqueadoHasta())
+                .filter(hasta -> hasta.isAfter(LocalDateTime.now()));
+    }
+
     @Override
     public void registrarIntentoFallido(String correo) {
         proveedorRepository.findByCorreo(correo).ifPresent(p -> {
