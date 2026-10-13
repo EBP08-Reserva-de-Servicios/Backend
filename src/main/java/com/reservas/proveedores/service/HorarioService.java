@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * HU-32: horario semanal (franjas) de un profesional.
@@ -128,14 +129,33 @@ public class HorarioService {
         regenerarDisponibilidad(profesional);
     }
 
+    /**
+     * Vuelve a generar los bloques de las próximas semanas para TODOS los profesionales con horario.
+     * La usa ExtensionDisponibilidadTarea (al arrancar y cada día), para que el calendario no se quede
+     * vacío cuando pasan las 4 semanas (observación de Arelis). Devuelve cuántos bloques se crearon.
+     */
+    @Transactional
+    public int extenderDisponibilidad() {
+        Set<String> conHorario = new TreeSet<>();
+        horarioRepository.findAll().forEach(h -> conHorario.add(h.getProfesionalId()));
+        int total = 0;
+        for (String profesionalId : conHorario) {
+            Profesional profesional = profesionalRepository.findById(profesionalId).orElse(null);
+            if (profesional != null) {
+                total += regenerarDisponibilidad(profesional);
+            }
+        }
+        return total;
+    }
+
     // ---- Auxiliares ----
 
     /** Vuelve a generar los bloques futuros del profesional con su horario actual. */
-    private void regenerarDisponibilidad(Profesional profesional) {
+    private int regenerarDisponibilidad(Profesional profesional) {
         List<FranjaHorarioResumen> franjas = horarioRepository.findByProfesionalId(profesional.getId()).stream()
                 .map(h -> new FranjaHorarioResumen(h.getDiaSemana(), h.getHoraFin(), h.getHoraInicio()))
                 .toList();
-        generadorDisponibilidad.regenerar(profesional.getId(), profesional.getServicioProveedorIds(), franjas);
+        return generadorDisponibilidad.regenerar(profesional.getId(), profesional.getServicioProveedorIds(), franjas);
     }
 
     private List<FranjaHorarioDetalle> listarDe(String profesionalId) {
