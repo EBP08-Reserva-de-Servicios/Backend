@@ -63,7 +63,11 @@ public class ProfesionalService implements ConsultaProfesionales {
         } else if (!p.getCorreo().matches(REGEX_CORREO_PROFESIONAL)) {
             errores.add("El correo electrónico no es válido.");
         }
-        if (vacio(p.getTelefono()))        errores.add("El teléfono es obligatorio.");
+        if (vacio(p.getTelefono())) {
+            errores.add("El teléfono es obligatorio.");
+        } else if (!p.getTelefono().matches("^\\d{10}$")) {
+            errores.add("El teléfono debe tener 10 dígitos numéricos.");   // igual que el prototipo (observación de Arelis)
+        }
 
         List<Long> ids = (servicioProveedorIds == null)
                 ? List.of()
