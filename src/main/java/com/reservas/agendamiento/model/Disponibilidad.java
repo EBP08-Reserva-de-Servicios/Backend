@@ -18,6 +18,10 @@ public class Disponibilidad {
     @Column(name = "servicio_proveedor_id")
     private Long servicioProveedorId;
 
+    /** HU-32: profesional que atiende el bloque (componente proveedores). Null en los bloques de Sprint 1. */
+    @Column(name = "profesional_id")
+    private String profesionalId;
+
     private LocalDate fecha;
     private LocalTime horaInicio;
     private LocalTime horaFin;
@@ -37,6 +41,14 @@ public class Disponibilidad {
 
     public void setServicioProveedorId(Long servicioProveedorId) {
         this.servicioProveedorId = servicioProveedorId;
+    }
+
+    public String getProfesionalId() {
+        return profesionalId;
+    }
+
+    public void setProfesionalId(String profesionalId) {
+        this.profesionalId = profesionalId;
     }
 
     public LocalDate getFecha() {

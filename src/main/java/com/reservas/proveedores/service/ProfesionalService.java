@@ -1,6 +1,8 @@
 package com.reservas.proveedores.service;
 
+import com.reservas.proveedores.api.ConsultaProfesionales;
 import com.reservas.proveedores.api.ProfesionalDetalle;
+import com.reservas.proveedores.api.ProfesionalResumen;
 import com.reservas.proveedores.api.VerificadorOfertas;
 import com.reservas.proveedores.model.Profesional;
 import com.reservas.proveedores.repository.ProfesionalRepository;
@@ -18,9 +20,10 @@ import java.util.regex.Pattern;
 /**
  * HU-29: registro y consulta de profesionales de un proveedor.
  * Mismo patrón de A1/O1: obligatorios y formatos (400) -> duplicados (409) -> guardar.
+ * También implementa ConsultaProfesionales (api) para que agendamiento muestre el profesional de cada bloque.
  */
 @Service
-public class ProfesionalService {
+public class ProfesionalService implements ConsultaProfesionales {
 
     // Regla de la pantalla del profesional en el prototipo
     private static final String REGEX_CORREO_PROFESIONAL = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
@@ -124,6 +127,17 @@ public class ProfesionalService {
     public List<ProfesionalDetalle> listar(Long nit) {
         verificarProveedor(nit);
         return profesionalRepository.findByProveedorNit(nit).stream().map(this::aDetalle).toList();
+    }
+
+    // ---- Contrato ConsultaProfesionales (lo usa agendamiento) ----
+
+    @Override
+    public Optional<ProfesionalResumen> obtenerProfesional(String profesionalId) {
+        if (profesionalId == null) {
+            return Optional.empty();
+        }
+        return profesionalRepository.findById(profesionalId)
+                .map(p -> new ProfesionalResumen(p.getApellidos(), p.getId(), p.getNombres()));
     }
 
     /** Para servir la imagen en GET /api/proveedores/{nit}/profesionales/{id}/foto. */

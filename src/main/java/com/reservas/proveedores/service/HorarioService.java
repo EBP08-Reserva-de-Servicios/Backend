@@ -2,7 +2,10 @@ package com.reservas.proveedores.service;
 
 import com.reservas.proveedores.api.DiaSemana;
 import com.reservas.proveedores.api.FranjaHorarioDetalle;
+import com.reservas.proveedores.api.FranjaHorarioResumen;
+import com.reservas.proveedores.api.GeneradorDisponibilidad;
 import com.reservas.proveedores.model.HorarioRecurrente;
+import com.reservas.proveedores.model.Profesional;
 import com.reservas.proveedores.repository.HorarioRecurrenteRepository;
 import com.reservas.proveedores.repository.ProfesionalRepository;
 import com.reservas.proveedores.repository.ProveedorRepository;
@@ -22,6 +25,8 @@ import java.util.Set;
 /**
  * HU-32: horario semanal (franjas) de un profesional.
  * POST agrega franjas (no reemplaza); GET lista; DELETE quita una franja.
+ * Después de cada cambio se regeneran los bloques de disponibilidad del profesional
+ * (GeneradorDisponibilidad, implementado en agendamiento: inversión de dependencias).
  */
 @Service
 public class HorarioService {
@@ -36,18 +41,21 @@ public class HorarioService {
     private final HorarioRecurrenteRepository horarioRepository;
     private final ProfesionalRepository profesionalRepository;
     private final ProveedorRepository proveedorRepository;
+    private final GeneradorDisponibilidad generadorDisponibilidad;     // lo implementa agendamiento
 
     public HorarioService(HorarioRecurrenteRepository horarioRepository,
                           ProfesionalRepository profesionalRepository,
-                          ProveedorRepository proveedorRepository) {
+                          ProveedorRepository proveedorRepository,
+                          GeneradorDisponibilidad generadorDisponibilidad) {
         this.horarioRepository = horarioRepository;
         this.profesionalRepository = profesionalRepository;
         this.proveedorRepository = proveedorRepository;
+        this.generadorDisponibilidad = generadorDisponibilidad;
     }
 
     @Transactional
     public List<FranjaHorarioDetalle> agregar(Long nit, String profesionalId, List<FranjaTexto> franjas) {
-        verificarProfesional(nit, profesionalId);
+        Profesional profesional = verificarProfesional(nit, profesionalId);
 
         if (franjas == null || franjas.isEmpty()) {
             throw new HorarioException(HorarioException.Tipo.INVALIDO, List.of("Selecciona al menos un día"));
@@ -99,8 +107,9 @@ public class HorarioService {
             }
         }
 
-        // 3) Guardar y devolver el horario completo
+        // 3) Guardar, regenerar los bloques y devolver el horario completo
         horarioRepository.saveAll(nuevas);
+        regenerarDisponibilidad(profesional);
         return listarDe(profesionalId);
     }
 
@@ -111,14 +120,23 @@ public class HorarioService {
 
     @Transactional
     public void eliminar(Long nit, String profesionalId, Long franjaId) {
-        verificarProfesional(nit, profesionalId);
+        Profesional profesional = verificarProfesional(nit, profesionalId);
         HorarioRecurrente franja = horarioRepository.findByIdAndProfesionalId(franjaId, profesionalId)
                 .orElseThrow(() -> new HorarioException(HorarioException.Tipo.NO_ENCONTRADO,
                         List.of("Franja no encontrada.")));
         horarioRepository.delete(franja);
+        regenerarDisponibilidad(profesional);
     }
 
     // ---- Auxiliares ----
+
+    /** Vuelve a generar los bloques futuros del profesional con su horario actual. */
+    private void regenerarDisponibilidad(Profesional profesional) {
+        List<FranjaHorarioResumen> franjas = horarioRepository.findByProfesionalId(profesional.getId()).stream()
+                .map(h -> new FranjaHorarioResumen(h.getDiaSemana(), h.getHoraFin(), h.getHoraInicio()))
+                .toList();
+        generadorDisponibilidad.regenerar(profesional.getId(), profesional.getServicioProveedorIds(), franjas);
+    }
 
     private List<FranjaHorarioDetalle> listarDe(String profesionalId) {
         return horarioRepository.findByProfesionalId(profesionalId).stream()
@@ -132,13 +150,16 @@ public class HorarioService {
                 .toList();
     }
 
-    private void verificarProfesional(Long nit, String profesionalId) {
+    private Profesional verificarProfesional(Long nit, String profesionalId) {
         if (nit == null || !proveedorRepository.existsById(nit)) {
             throw new HorarioException(HorarioException.Tipo.NO_ENCONTRADO, List.of("Proveedor no encontrado."));
         }
-        if (profesionalId == null || profesionalRepository.findByIdAndProveedorNit(profesionalId, nit).isEmpty()) {
+        if (profesionalId == null) {
             throw new HorarioException(HorarioException.Tipo.NO_ENCONTRADO, List.of("Profesional no encontrado."));
         }
+        return profesionalRepository.findByIdAndProveedorNit(profesionalId, nit)
+                .orElseThrow(() -> new HorarioException(HorarioException.Tipo.NO_ENCONTRADO,
+                        List.of("Profesional no encontrado.")));
     }
 
     /** Mismo día y se pisan: inicioA < finB y inicioB < finA (tocarse en el borde no es cruce). */
