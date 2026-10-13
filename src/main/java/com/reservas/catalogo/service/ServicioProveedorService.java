@@ -9,14 +9,16 @@ import com.reservas.catalogo.repository.ServicioProveedorRepository;
 import com.reservas.catalogo.repository.ServicioRepository;
 import com.reservas.proveedores.api.ConsultaProveedores;
 import com.reservas.proveedores.api.ProveedorDetalle;
+import com.reservas.proveedores.api.VerificadorOfertas;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class ServicioProveedorService implements ConsultaOferta {
+public class ServicioProveedorService implements ConsultaOferta, VerificadorOfertas {
 
     private final ServicioProveedorRepository servicioProveedorRepository;
     private final ServicioRepository servicioRepository;
@@ -93,6 +95,18 @@ public class ServicioProveedorService implements ConsultaOferta {
             throw new RegistroOfertaException(RegistroOfertaException.Tipo.NO_ENCONTRADO,
                     List.of("Proveedor no encontrado."));
         }
+    }
+
+    // ---- Contrato VerificadorOfertas (lo usa proveedores para HU-29) ----
+
+    @Override
+    public boolean pertenecenAlProveedor(Long nit, List<Long> servicioProveedorIds) {
+        if (nit == null || servicioProveedorIds == null || servicioProveedorIds.isEmpty()) {
+            return false;
+        }
+        List<ServicioProveedor> encontradas = servicioProveedorRepository.findAllById(servicioProveedorIds);
+        return encontradas.size() == new HashSet<>(servicioProveedorIds).size()
+                && encontradas.stream().allMatch(sp -> nit.equals(sp.getProveedorNit()));
     }
 
     // ---- Contrato ConsultaOferta (usado por otros componentes) ----
