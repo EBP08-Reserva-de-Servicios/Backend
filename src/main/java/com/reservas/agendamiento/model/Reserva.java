@@ -12,13 +12,22 @@ public class Reserva {
     private String codigo;
 
     private Long idServicioProveedor;
+    /** Sprint 1: cliente "de prueba" (número). Se conserva mientras el front actual lo envíe (expandir y contraer). */
     private Long idCliente;
     private LocalDate fecha;
     private LocalTime hora;
     private String estado; // PENDIENTE, CONFIRMADA o CANCELADA
     private LocalDateTime fechaCreacion;
 
-        public String getCodigo() {
+    /** HU-24: UUID del cliente que agendó, tomado del token (nunca del cuerpo). Null en las reservas de Sprint 1. */
+    @Column(name = "cliente_id")
+    private String clienteId;
+
+    /** HU-24/HU-32: profesional que atiende (el del bloque reservado). Null si el bloque no tenía profesional. */
+    @Column(name = "profesional_id")
+    private String profesionalId;
+
+    public String getCodigo() {
         return codigo;
     }
 
@@ -72,5 +81,21 @@ public class Reserva {
 
     public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
+    }
+
+    public String getClienteId() {
+        return clienteId;
+    }
+
+    public void setClienteId(String clienteId) {
+        this.clienteId = clienteId;
+    }
+
+    public String getProfesionalId() {
+        return profesionalId;
+    }
+
+    public void setProfesionalId(String profesionalId) {
+        this.profesionalId = profesionalId;
     }
 }

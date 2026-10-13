@@ -22,6 +22,8 @@ public class ReservaController {
     public ResponseEntity<?> agendar(@RequestBody Reserva reserva) {
         try {
             return ResponseEntity.ok(reservaService.agendar(reserva));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(e.getMessage());
         } catch (ConflictoReservaException e) {
             return ResponseEntity.status(409).body(e.getMessage());
         } catch (NoSuchElementException e) {
