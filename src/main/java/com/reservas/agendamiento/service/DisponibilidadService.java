@@ -35,6 +35,11 @@ public class DisponibilidadService {
                 .findByServicioProveedorIdAndFechaAndEstado(servicioProveedorId, fecha, DISPONIBLE);
     }
 
+    /** HU-24: true si el bloque seguía DISPONIBLE y quedó RESERVADO; false si otro lo tomó primero. */
+    public boolean reservarSiDisponible(Long disponibilidadId) {
+        return disponibilidadRepository.reservarSiDisponible(disponibilidadId) == 1;
+    }
+
     /** Lo mismo, como vista pública con la oferta anidada (para el controller). */
     public List<DisponibilidadDetalle> consultarDisponibles(Long servicioProveedorId, LocalDate fecha) {
         List<Disponibilidad> bloques = listarDisponibles(servicioProveedorId, fecha);
