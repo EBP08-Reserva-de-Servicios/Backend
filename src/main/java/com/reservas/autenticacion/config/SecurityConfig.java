@@ -78,15 +78,20 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/servicios/**").denyAll()
                 .requestMatchers(HttpMethod.DELETE, "/api/servicios/**").denyAll()
 
-                // 6) Lecturas públicas: buscar, disponibilidad, proveedores, servicios, ubicación, logo, foto...
+                // 6) Lista de profesionales de un proveedor: trae correo, teléfono y documento (datos personales),
+                //    así que solo la ve el PROVEEDOR dueño. La foto y el horario siguen públicos (regla 7).
+                //    El calendario del cliente no se afecta: usa ProfesionalResumen (solo el nombre).
+                .requestMatchers(HttpMethod.GET, "/api/proveedores/{nit}/profesionales").access(proveedorDelNit())
+
+                // 7) Lecturas públicas: buscar, disponibilidad, proveedores, servicios, ubicación, logo, foto, horario...
                 .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
 
-                // 7) Swagger, preflight de CORS y la página de error de Spring
+                // 8) Swagger, preflight de CORS y la página de error de Spring
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/error").permitAll()
 
-                // 8) Todo lo demás: cerrado
+                // 9) Todo lo demás: cerrado
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(rolesDesdeElToken())));
         return http.build();
