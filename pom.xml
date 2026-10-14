@@ -73,20 +73,20 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
-        
-        <!-- Seguridad (A2). Queda TODO abierto en SecurityConfig; los roles se aplican en A3 -->
+
+        <!-- Seguridad (A2). Las reglas por rol están en autenticacion.config.SecurityConfig (A3b) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-                <!-- Generar y verificar tokens JWT (A2 los genera; A3 los verifica) -->
+        <!-- Generar y verificar tokens JWT (A2 los genera; A3 los verifica) -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-jose</artifactId>
         </dependency>
 
-                <!-- A3: el backend VERIFICA el token (Authorization: Bearer ...) -->
+        <!-- A3a: el backend VERIFICA el token (Authorization: Bearer ...) -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-resource-server</artifactId>
