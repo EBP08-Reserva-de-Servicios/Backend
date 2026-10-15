@@ -6,6 +6,7 @@ import com.reservas.proveedores.model.Proveedor;
  * Cuerpo que recibe POST /api/proveedores/registro (HU-16).
  * Las claves son las mismas de RegistroProveedorBody en src/api/contratoBackend.ts del prototipo.
  * nit, logo y clave llegan como texto y los convierte/valida ProveedorService.registrar.
+ * municipioId (HU-16: ciudad y departamento) es el código del municipio; el departamento se deduce de él.
  */
 public record ProveedorRegistroSolicitud(
         String tipoServicio,
@@ -14,6 +15,7 @@ public record ProveedorRegistroSolicitud(
         String nit,                     // solo dígitos, sin dígito de verificación
         String telefono,
         String correo,
+        Long municipioId,               // código del municipio (GET /api/municipios); obligatorio
         String representanteNombres,
         String representanteApellidos,
         String representanteCelular,
@@ -27,6 +29,7 @@ public record ProveedorRegistroSolicitud(
         p.setRazonSocial(razonSocial);
         p.setTelefono(telefono);
         p.setCorreo(correo);
+        p.setMunicipioId(municipioId);
         p.setRepresentanteNombres(representanteNombres);
         p.setRepresentanteApellidos(representanteApellidos);
         p.setRepresentanteCelular(representanteCelular);
