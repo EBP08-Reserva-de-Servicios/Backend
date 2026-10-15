@@ -31,8 +31,10 @@ public class BusquedaService {
                 : consultaOferta.listarOfertas();
 
         if (municipioId != null) {
+            // Un proveedor registrado sin ubicación (HU-16 en el Sprint 2) no tiene municipio:
+            // no coincide con ningún municipio, pero no debe tumbar la búsqueda (antes daba 500).
             resultado = resultado.stream()
-                    .filter(o -> o.proveedor().municipio().codigo().equals(municipioId))
+                    .filter(o -> estaEnMunicipio(o, municipioId))
                     .toList();
         }
 
@@ -50,7 +52,9 @@ public class BusquedaService {
                             return true;
                         }
 
-                        LocalTime horaFinCita = hora.plusMinutes(o.servicio().duracion());
+                        // Duración de la oferta (HU-19); si no tiene, la del servicio; si tampoco, solo la hora de inicio.
+                        Integer duracion = duracionDe(o);
+                        LocalTime horaFinCita = (duracion == null) ? hora : hora.plusMinutes(duracion);
 
                         return disponibles.stream().anyMatch(d ->
                                 !hora.isBefore(d.getHoraInicio())
@@ -60,5 +64,20 @@ public class BusquedaService {
         }
 
         return resultado;
+    }
+
+    private static boolean estaEnMunicipio(OfertaDetalle oferta, Long municipioId) {
+        if (oferta.proveedor() == null) {
+            return false;
+        }
+        var municipio = oferta.proveedor().municipio();   // sin importar ubicacion: agendamiento no depende de ese componente
+        return municipio != null && municipioId.equals(municipio.codigo());
+    }
+
+    private static Integer duracionDe(OfertaDetalle oferta) {
+        if (oferta.duracion() != null) {
+            return oferta.duracion();
+        }
+        return (oferta.servicio() == null) ? null : oferta.servicio().duracion();
     }
 }
