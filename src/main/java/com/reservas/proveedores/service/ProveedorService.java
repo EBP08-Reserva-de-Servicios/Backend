@@ -111,6 +111,13 @@ public class ProveedorService implements ConsultaProveedores, CuentaAutenticable
         }
         if (vacio(proveedor.getRepresentanteDocumento())) errores.add("El número de documento es obligatorio.");
 
+        // Ubicación (HU-16: ciudad y departamento). Llega solo el municipio: el departamento sale de él.
+        if (proveedor.getMunicipioId() == null) {
+            errores.add("El municipio es obligatorio.");
+        } else if (consultaUbicaciones.obtenerMunicipio(proveedor.getMunicipioId()).isEmpty()) {
+            errores.add("El municipio seleccionado no existe.");
+        }
+
         // Logo: obligatorio, PNG o JPG, máximo 5 MB
         byte[] logoBytes = null;
         String logoTipo = null;
