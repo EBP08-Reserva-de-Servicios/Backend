@@ -30,14 +30,14 @@ import java.util.Base64;
  * A3a: el backend VERIFICA el token si llega (firma con JWT_SECRET, vencimiento y emisor "agendaya").
  * A3b: reglas por rol (HU-Seg-03), según la matriz 14.3 del contexto del equipo:
  *      - sin token en una ruta protegida -> 401; con token del rol equivocado (u otro NIT) -> 403;
- *      - lo que usa el front del Sprint 1 (lecturas y POST /api/reservas sin token) sigue ABIERTO
- *        (expandir y contraer: exigir token al agendar se hace cuando se despliegue el front nuevo).
+ *      - las lecturas siguen públicas.
+ * Contraer (16 oct, front del Sprint 2 en producción): agendar exige token de CLIENTE.
+ *      Ya no se acepta POST /api/reservas sin token (era la ruta del front del Sprint 1).
  * Las reglas se evalúan en orden: de lo más específico a lo más general.
  */
 @Configuration
 public class SecurityConfig {
 
-    private static final String ROL_CLIENTE = "ROLE_CLIENTE";
     private static final String ROL_PROVEEDOR = "ROLE_PROVEEDOR";
 
     @Bean
@@ -61,8 +61,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE,
                         "/api/proveedores/{nit}/profesionales/{profesionalId}/horario/{franjaId}").access(proveedorDelNit())
 
-                // 3) Agendar (HU-24): sin token sigue abierto (front del Sprint 1); con token, solo CLIENTE
-                .requestMatchers(HttpMethod.POST, "/api/reservas").access(sinTokenOCliente())
+                // 3) Agendar (HU-24): solo CLIENTE (contraer). Sin token -> 401; token de PROVEEDOR -> 403
+                .requestMatchers(HttpMethod.POST, "/api/reservas").hasRole("CLIENTE")
 
                 // 4) Mis citas: el controller ya responde 401/403 con los textos del contrato (14.6)
                 .requestMatchers(HttpMethod.GET, "/api/reservas/mias").permitAll()
@@ -130,15 +130,6 @@ public class SecurityConfig {
                     && jwt.getToken().getSubject() != null
                     && jwt.getToken().getSubject().equals(contexto.getVariables().get("nit"));
             return new AuthorizationDecision(permitido);
-        };
-    }
-
-    /** Sin token (front del Sprint 1) o con token de CLIENTE. Un token de PROVEEDOR no puede agendar. */
-    private static AuthorizationManager<RequestAuthorizationContext> sinTokenOCliente() {
-        return (autenticacion, contexto) -> {
-            Authentication a = autenticacion.get();
-            boolean sinToken = !(a instanceof JwtAuthenticationToken);
-            return new AuthorizationDecision(sinToken || tieneRol(a, ROL_CLIENTE));
         };
     }
 

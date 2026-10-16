@@ -12,7 +12,8 @@ import java.util.NoSuchElementException;
 
 /**
  * Reservas. El cliente SIEMPRE sale del token (claim sub), nunca del cuerpo ni de la URL (evita IDOR).
- * jwt llega null si no hay token o si el backend aún no verifica tokens (antes de A3a).
+ * Agendar exige token de CLIENTE (contraer, 16 oct): SecurityConfig responde 401 sin token y 403 con otro rol,
+ * antes de llegar aquí. En /mias el jwt puede llegar null y el controller responde con texto.
  */
 @RestController
 @RequestMapping("/api/reservas")
@@ -24,7 +25,7 @@ public class ReservaController {
         this.reservaService = reservaService;
     }
 
-    /** Errores en TEXTO PLANO, como en Sprint 1 (el front actual los muestra así): 400, 404 o 409. */
+    /** Errores en TEXTO PLANO, como en Sprint 1 (el front los muestra así): 400, 404 o 409. 401/403 los responde Spring. */
     @PostMapping
     public ResponseEntity<?> agendar(@RequestBody Reserva reserva, @AuthenticationPrincipal Jwt jwt) {
         try {

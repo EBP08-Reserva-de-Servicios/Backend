@@ -12,7 +12,8 @@ public class Reserva {
     private String codigo;
 
     private Long idServicioProveedor;
-    /** Sprint 1: cliente "de prueba" (número). Se conserva mientras el front actual lo envíe (expandir y contraer). */
+    /** Sprint 1: cliente "de prueba" (número). Desde el contraer (16 oct) ya no se llena: siempre null en reservas nuevas.
+     *  La columna se conserva por las reservas antiguas que la tienen (borrarla sería un cambio destructivo). */
     private Long idCliente;
     private LocalDate fecha;
     private LocalTime hora;
