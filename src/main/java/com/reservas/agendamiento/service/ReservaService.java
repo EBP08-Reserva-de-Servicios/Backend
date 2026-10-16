@@ -44,15 +44,20 @@ public class ReservaService {
      * El bloque pasa a RESERVADO con una actualización condicional: si dos clientes llegan a la vez,
      * solo uno lo obtiene y el otro recibe 409. Todo en una transacción.
      *
-     * @param clienteId UUID del cliente tomado del token (sub), o null si no llegó token de cliente
-     *                  (front de Sprint 1: se conserva el idCliente del cuerpo; expandir y contraer).
+     * @param clienteId UUID del cliente tomado del token (sub). Desde el contraer (16 oct) siempre llega:
+     *                  SecurityConfig solo deja agendar con token de CLIENTE (sin token 401, proveedor 403).
      */
     @Transactional
     public Reserva agendar(Reserva reserva, String clienteId) {
+        // Defensa extra: SecurityConfig ya lo garantiza, pero el service no confía en que lo llamen bien.
+        if (clienteId == null) {
+            throw new IllegalArgumentException("Inicia sesión como cliente para agendar.");
+        }
         // Nunca se aceptan del cuerpo: los pone el backend
         reserva.setCodigo(null);
         reserva.setEstado(null);
         reserva.setClienteId(clienteId);
+        reserva.setIdCliente(null); // contraer: el idCliente del Sprint 1 ya no se usa (el cliente sale del token)
 
         if (reserva.getIdServicioProveedor() == null || reserva.getFecha() == null || reserva.getHora() == null) {
             throw new IllegalArgumentException("Faltan datos de la reserva: idServicioProveedor, fecha y hora son obligatorios.");
