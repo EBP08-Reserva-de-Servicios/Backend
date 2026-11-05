@@ -140,8 +140,8 @@ public class ProfesionalService implements ConsultaProfesionales {
         if (profesionalId == null) {
             return Optional.empty();
         }
-        return profesionalRepository.findById(profesionalId)
-                .map(p -> new ProfesionalResumen(p.getApellidos(), p.getId(), p.getNombres()));
+        // Proyección: no carga la foto (antes findById traía los bytes solo para leer el nombre)
+        return profesionalRepository.buscarResumen(profesionalId);
     }
 
     /** Para servir la imagen en GET /api/proveedores/{nit}/profesionales/{id}/foto. */

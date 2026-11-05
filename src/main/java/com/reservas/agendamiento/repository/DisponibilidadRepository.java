@@ -13,6 +13,10 @@ public interface DisponibilidadRepository extends JpaRepository<Disponibilidad, 
     List<Disponibilidad> findByServicioProveedorIdAndFechaAndEstado(
         Long servicioProveedorId, LocalDate fecha, String estado);
 
+    // Mejora de rendimiento: los bloques de varias semanas en una sola consulta (usa ix_disponibilidad_oferta_estado_fecha)
+    List<Disponibilidad> findByServicioProveedorIdAndEstadoAndFechaBetweenOrderByFechaAscHoraInicioAsc(
+        Long servicioProveedorId, String estado, LocalDate desde, LocalDate hasta);
+
     // HU-32: regeneración de los bloques de un profesional
     List<Disponibilidad> findByProfesionalIdAndFechaGreaterThanEqual(String profesionalId, LocalDate fecha);
 
