@@ -10,7 +10,10 @@ import com.reservas.proveedores.api.ProfesionalResumen;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class DisponibilidadService {
@@ -42,13 +45,19 @@ public class DisponibilidadService {
 
     /** Lo mismo, como vista pública con la oferta anidada (para el controller). */
     public List<DisponibilidadDetalle> consultarDisponibles(Long servicioProveedorId, LocalDate fecha) {
-        List<Disponibilidad> bloques = listarDisponibles(servicioProveedorId, fecha);
-        if (bloques.isEmpty()) {
-            return List.of();
-        }
-        // Todos los bloques son de la misma oferta: se consulta una sola vez
-        OfertaDetalle oferta = consultaOferta.obtenerOferta(servicioProveedorId).orElse(null);
-        return bloques.stream().map(d -> aDetalle(d, oferta)).toList();
+        return aDetalles(servicioProveedorId, listarDisponibles(servicioProveedorId, fecha));
+    }
+
+    /**
+     * Mejora de rendimiento: todos los bloques DISPONIBLES de una oferta entre dos fechas (incluidas),
+     * ordenados por fecha y hora, en UNA sola consulta a la base (antes el front hacía una petición por día).
+     */
+    public List<DisponibilidadDetalle> consultarDisponiblesEnRango(Long servicioProveedorId,
+                                                                   LocalDate desde, LocalDate hasta) {
+        List<Disponibilidad> bloques = disponibilidadRepository
+                .findByServicioProveedorIdAndEstadoAndFechaBetweenOrderByFechaAscHoraInicioAsc(
+                        servicioProveedorId, DISPONIBLE, desde, hasta);
+        return aDetalles(servicioProveedorId, bloques);
     }
 
     public DisponibilidadDetalle crear(Disponibilidad disponibilidad) {
@@ -56,14 +65,31 @@ public class DisponibilidadService {
         OfertaDetalle oferta = (guardada.getServicioProveedorId() == null)
                 ? null
                 : consultaOferta.obtenerOferta(guardada.getServicioProveedorId()).orElse(null);
-        return aDetalle(guardada, oferta);
+        return aDetalle(guardada, oferta, new HashMap<>());
     }
 
-    private DisponibilidadDetalle aDetalle(Disponibilidad d, OfertaDetalle oferta) {
+    // ---- Conversión entidad -> vista pública ----
+
+    /**
+     * Todos los bloques son de la misma oferta: la oferta se consulta UNA vez y cada profesional UNA vez
+     * (antes se consultaba el profesional por cada bloque).
+     */
+    private List<DisponibilidadDetalle> aDetalles(Long servicioProveedorId, List<Disponibilidad> bloques) {
+        if (bloques.isEmpty()) {
+            return List.of();
+        }
+        OfertaDetalle oferta = consultaOferta.obtenerOferta(servicioProveedorId).orElse(null);
+        Map<String, Optional<ProfesionalResumen>> profesionales = new HashMap<>();
+        return bloques.stream().map(d -> aDetalle(d, oferta, profesionales)).toList();
+    }
+
+    private DisponibilidadDetalle aDetalle(Disponibilidad d, OfertaDetalle oferta,
+                                           Map<String, Optional<ProfesionalResumen>> profesionales) {
         ProfesionalResumen profesional = (d.getProfesionalId() == null)
-            ? null
-            : consultaProfesionales.obtenerProfesional(d.getProfesionalId()).orElse(null);
+                ? null
+                : profesionales.computeIfAbsent(d.getProfesionalId(), consultaProfesionales::obtenerProfesional)
+                        .orElse(null);
         return new DisponibilidadDetalle(
-            d.getEstado(), d.getFecha(), d.getHoraFin(), d.getHoraInicio(), d.getId(), profesional, oferta);
+                d.getEstado(), d.getFecha(), d.getHoraFin(), d.getHoraInicio(), d.getId(), profesional, oferta);
     }
 }
