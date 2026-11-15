@@ -28,6 +28,11 @@ public class Reserva {
     @Column(name = "profesional_id")
     private String profesionalId;
 
+    /** HU-26: hora de fin del bloque reservado, guardada al agendar. Así la cita conserva su duración
+     *  aunque el proveedor cambie después la duración del servicio. Null en reservas anteriores a este cambio. */
+    @Column(name = "hora_fin")
+    private LocalTime horaFin;
+
     public String getCodigo() {
         return codigo;
     }
@@ -98,5 +103,13 @@ public class Reserva {
 
     public void setProfesionalId(String profesionalId) {
         this.profesionalId = profesionalId;
+    }
+
+    public LocalTime getHoraFin() {
+        return horaFin;
+    }
+
+    public void setHoraFin(LocalTime horaFin) {
+        this.horaFin = horaFin;
     }
 }
