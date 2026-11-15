@@ -15,6 +15,10 @@ public interface ProfesionalRepository extends JpaRepository<Profesional, String
 
     Optional<Profesional> findByIdAndProveedorNit(String id, Long proveedorNit);
 
+    /** HU-26: profesionales que atienden una oferta (para regenerar sus bloques si cambia la duración). */
+    @Query("select p from Profesional p where :ofertaId member of p.servicioProveedorIds")
+    List<Profesional> buscarPorOferta(@Param("ofertaId") Long ofertaId);
+
     /**
      * Solo nombre y apellidos, SIN cargar la foto (bytea). La usa la disponibilidad del cliente:
      * con findById se traían los bytes de la foto solo para mostrar el nombre.

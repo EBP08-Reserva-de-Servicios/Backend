@@ -1,6 +1,7 @@
 package com.reservas.proveedores.service;
 
 import com.reservas.proveedores.api.DiaSemana;
+import com.reservas.proveedores.api.DuracionOfertaModificada;
 import com.reservas.proveedores.api.FranjaHorarioDetalle;
 import com.reservas.proveedores.api.FranjaHorarioResumen;
 import com.reservas.proveedores.api.GeneradorDisponibilidad;
@@ -9,6 +10,7 @@ import com.reservas.proveedores.model.Profesional;
 import com.reservas.proveedores.repository.HorarioRecurrenteRepository;
 import com.reservas.proveedores.repository.ProfesionalRepository;
 import com.reservas.proveedores.repository.ProveedorRepository;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -146,6 +148,19 @@ public class HorarioService {
             }
         }
         return total;
+    }
+
+    /**
+     * HU-26: un proveedor cambió la duración de una oferta (evento que publica catalogo).
+     * Se regeneran los bloques libres de cada profesional que la atiende, ya con la nueva duración.
+     * Corre en la misma transacción de la edición: si algo falla, la edición tampoco se guarda.
+     */
+    @EventListener
+    @Transactional
+    public void alCambiarDuracionDeOferta(DuracionOfertaModificada evento) {
+        for (Profesional profesional : profesionalRepository.buscarPorOferta(evento.servicioProveedorId())) {
+            regenerarDisponibilidad(profesional);
+        }
     }
 
     // ---- Auxiliares ----
