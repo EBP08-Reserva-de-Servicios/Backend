@@ -13,9 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * HU-32 -> calendario del cliente: convierte el horario semanal de un profesional en bloques
@@ -50,10 +50,13 @@ public class GeneracionDisponibilidadService implements GeneradorDisponibilidad 
             return 0;
         }
 
-        // 2) Lo que quedó (p. ej. RESERVADO) no se vuelve a crear
-        Set<String> ocupados = new HashSet<>();
+        // 2) Lo que quedó (p. ej. RESERVADO) no se vuelve a crear NI se pisa: se guardan sus intervalos por fecha.
+        //    HU-26: si cambia la duración, un bloque nuevo puede empezar a otra hora y cruzarse con una cita
+        //    ya reservada (de cualquier oferta del profesional); por eso se compara por intervalo, no por hora exacta.
+        Map<LocalDate, List<LocalTime[]>> ocupados = new HashMap<>();
         for (Disponibilidad d : disponibilidadRepository.findByProfesionalIdAndFechaGreaterThanEqual(profesionalId, desde)) {
-            ocupados.add(clave(d.getServicioProveedorId(), d.getFecha(), d.getHoraInicio()));
+            ocupados.computeIfAbsent(d.getFecha(), f -> new ArrayList<>())
+                    .add(new LocalTime[] { d.getHoraInicio(), d.getHoraFin() });
         }
 
         // 3) Generar: oferta x día x franja, en bloques de la duración de la oferta
@@ -74,7 +77,8 @@ public class GeneracionDisponibilidadService implements GeneradorDisponibilidad 
                     // En minutos del día: así nunca "da la vuelta" por la medianoche
                     for (int m = inicio; m + duracion <= fin; m += duracion) {
                         LocalTime horaInicio = LocalTime.ofSecondOfDay(m * 60L);
-                        if (ocupados.contains(clave(ofertaId, fecha, horaInicio))) {
+                        LocalTime horaFin = LocalTime.ofSecondOfDay((m + duracion) * 60L);
+                        if (seCruzaConOcupados(ocupados.get(fecha), horaInicio, horaFin)) {
                             continue;
                         }
                         Disponibilidad d = new Disponibilidad();
@@ -82,7 +86,7 @@ public class GeneracionDisponibilidadService implements GeneradorDisponibilidad 
                         d.setProfesionalId(profesionalId);
                         d.setFecha(fecha);
                         d.setHoraInicio(horaInicio);
-                        d.setHoraFin(LocalTime.ofSecondOfDay((m + duracion) * 60L));
+                        d.setHoraFin(horaFin);
                         d.setEstado(DISPONIBLE);
                         nuevos.add(d);
                     }
@@ -100,7 +104,27 @@ public class GeneracionDisponibilidadService implements GeneradorDisponibilidad 
         return (oferta.servicio() == null) ? null : oferta.servicio().duracion();
     }
 
-    private static String clave(Long ofertaId, LocalDate fecha, LocalTime horaInicio) {
-        return ofertaId + "|" + fecha + "|" + horaInicio;
+    /** true si [inicio, fin) se pisa con algún bloque que quedó ese día (tocarse en el borde no es cruce). */
+    private static boolean seCruzaConOcupados(List<LocalTime[]> ocupadosDelDia, LocalTime inicio, LocalTime fin) {
+        if (ocupadosDelDia == null) {
+            return false;
+        }
+        for (LocalTime[] o : ocupadosDelDia) {
+            LocalTime oInicio = o[0];
+            LocalTime oFin = o[1];
+            if (oInicio == null) {
+                continue;
+            }
+            if (oFin == null) {                                   // bloques antiguos sin hora de fin
+                if (oInicio.equals(inicio)) {
+                    return true;
+                }
+                continue;
+            }
+            if (inicio.isBefore(oFin) && oInicio.isBefore(fin)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

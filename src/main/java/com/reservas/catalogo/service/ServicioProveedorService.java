@@ -8,9 +8,12 @@ import com.reservas.catalogo.model.ServicioProveedor;
 import com.reservas.catalogo.repository.ServicioProveedorRepository;
 import com.reservas.catalogo.repository.ServicioRepository;
 import com.reservas.proveedores.api.ConsultaProveedores;
+import com.reservas.proveedores.api.DuracionOfertaModificada;
 import com.reservas.proveedores.api.ProveedorDetalle;
 import com.reservas.proveedores.api.VerificadorOfertas;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -23,13 +26,16 @@ public class ServicioProveedorService implements ConsultaOferta, VerificadorOfer
     private final ServicioProveedorRepository servicioProveedorRepository;
     private final ServicioRepository servicioRepository;
     private final ConsultaProveedores consultaProveedores;
+    private final ApplicationEventPublisher eventos;     // HU-26: avisa a proveedores si cambia la duración
 
     public ServicioProveedorService(ServicioProveedorRepository servicioProveedorRepository,
                                     ServicioRepository servicioRepository,
-                                    ConsultaProveedores consultaProveedores) {
+                                    ConsultaProveedores consultaProveedores,
+                                    ApplicationEventPublisher eventos) {
         this.servicioProveedorRepository = servicioProveedorRepository;
         this.servicioRepository = servicioRepository;
         this.consultaProveedores = consultaProveedores;
+        this.eventos = eventos;
     }
 
     // ---- Operaciones usadas por los controllers del componente ----
@@ -82,6 +88,52 @@ public class ServicioProveedorService implements ConsultaOferta, VerificadorOfer
         oferta.setServicio(servicio);
         oferta.setDescripcion(oferta.getDescripcion().trim());
         return aDetalle(servicioProveedorRepository.save(oferta));
+    }
+
+    /**
+     * HU-26: el proveedor edita precio, duración y descripción de una de SUS ofertas.
+     * El servicio del catálogo (nombre y categoría) no cambia. Precio y duración deben ser mayores a 0.
+     * Si cambia la duración, se publica DuracionOfertaModificada: proveedores regenera los bloques
+     * libres de los profesionales que la atienden (las reservas existentes se conservan).
+     */
+    @Transactional
+    public OfertaDetalle editarDelProveedor(Long nit, Long ofertaId, Double precio, Integer duracion, String descripcion) {
+        verificarProveedor(nit);
+        ServicioProveedor oferta = (ofertaId == null)
+                ? null
+                : servicioProveedorRepository.findByIdAndProveedorNit(ofertaId, nit).orElse(null);
+        if (oferta == null) {
+            throw new RegistroOfertaException(RegistroOfertaException.Tipo.NO_ENCONTRADO,
+                    List.of("Servicio no encontrado."));
+        }
+
+        List<String> errores = new ArrayList<>();
+        if (precio == null) {
+            errores.add("El precio es obligatorio.");
+        } else if (precio <= 0) {
+            errores.add("Ingresa un precio mayor a 0");
+        }
+        if (duracion == null) {
+            errores.add("La duración es obligatoria.");
+        } else if (duracion <= 0) {
+            errores.add("Ingresa un número de minutos mayor a 0");
+        }
+        if (descripcion == null || descripcion.isBlank()) {
+            errores.add("La descripción es obligatoria");
+        }
+        if (!errores.isEmpty()) {
+            throw new RegistroOfertaException(RegistroOfertaException.Tipo.INVALIDO, errores);
+        }
+
+        boolean cambioDuracion = !duracion.equals(oferta.getDuracion());
+        oferta.setPrecio(precio);
+        oferta.setDuracion(duracion);
+        oferta.setDescripcion(descripcion.trim());
+        ServicioProveedor guardada = servicioProveedorRepository.save(oferta);
+        if (cambioDuracion) {
+            eventos.publishEvent(new DuracionOfertaModificada(guardada.getId()));
+        }
+        return aDetalle(guardada);
     }
 
     /** HU-19 escenario 3: catálogo de servicios del proveedor. */

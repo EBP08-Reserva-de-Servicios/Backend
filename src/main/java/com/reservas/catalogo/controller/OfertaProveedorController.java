@@ -47,6 +47,19 @@ public class OfertaProveedorController {
         }
     }
 
+    /** HU-26: 200 con la oferta editada; 400 datos inválidos; 404 proveedor u oferta inexistente (o de otro proveedor). */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> editar(@PathVariable Long nit, @PathVariable Long id,
+                                    @RequestBody OfertaEditarSolicitud solicitud) {
+        try {
+            OfertaDetalle editada = servicioProveedorService.editarDelProveedor(
+                    nit, id, solicitud.precio(), solicitud.duracion(), solicitud.descripcion());
+            return ResponseEntity.ok(editada);
+        } catch (RegistroOfertaException e) {
+            return error(e);
+        }
+    }
+
     private ResponseEntity<Map<String, List<String>>> error(RegistroOfertaException e) {
         HttpStatus estado = (e.getTipo() == RegistroOfertaException.Tipo.NO_ENCONTRADO)
                 ? HttpStatus.NOT_FOUND
