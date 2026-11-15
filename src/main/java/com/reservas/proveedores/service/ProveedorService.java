@@ -4,6 +4,8 @@ import com.reservas.compartido.CuentaAutenticable;
 import com.reservas.compartido.CuentaResumen;
 import com.reservas.proveedores.api.ConsultaProveedores;
 import com.reservas.proveedores.api.ProveedorDetalle;
+import com.reservas.proveedores.api.ProveedorPerfil;
+import com.reservas.proveedores.api.RepresentanteLegal;
 import com.reservas.proveedores.model.Proveedor;
 import com.reservas.proveedores.repository.ProveedorRepository;
 import com.reservas.ubicacion.api.ConsultaUbicaciones;
@@ -197,6 +199,27 @@ public class ProveedorService implements ConsultaProveedores, CuentaAutenticable
     @Override
     public Optional<ProveedorDetalle> obtenerProveedor(Long nit) {
         return obtener(nit);
+    }
+
+    /** HU-10: perfil del proveedor del token. Nunca devuelve la clave ni los bytes del logo. */
+    @Override
+    public Optional<ProveedorPerfil> obtenerPerfil(Long nit) {
+        if (nit == null) {
+            return Optional.empty();
+        }
+        return proveedorRepository.findById(nit).map(p -> {
+            ProveedorDetalle d = aDetalle(p);       // reutiliza el municipio y la dirección del logo
+            return new ProveedorPerfil(
+                    p.getCorreo(),
+                    d.logoUrl(),
+                    d.municipio(),
+                    p.getNit(),
+                    p.getRazonSocial(),
+                    new RepresentanteLegal(p.getRepresentanteApellidos(), p.getRepresentanteCelular(),
+                            p.getRepresentanteDocumento(), p.getRepresentanteNombres()),
+                    p.getTelefono(),
+                    p.getTipoServicio());
+        });
     }
 
     // ---- Contrato CuentaAutenticable (lo usa el login en A2) ----

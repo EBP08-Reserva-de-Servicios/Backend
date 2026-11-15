@@ -83,6 +83,9 @@ public class SecurityConfig {
                 //    El calendario del cliente no se afecta: usa ProfesionalResumen (solo el nombre).
                 .requestMatchers(HttpMethod.GET, "/api/proveedores/{nit}/profesionales").access(proveedorDelNit())
 
+                // HU-10: el perfil propio exige sesión (cliente o proveedor). Va ANTES de la regla 7 (GET /api/** público)
+                .requestMatchers(HttpMethod.GET, "/api/perfil").authenticated()
+
                 // 7) Lecturas públicas: buscar, disponibilidad, proveedores, servicios, ubicación, logo, foto, horario...
                 .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
 
