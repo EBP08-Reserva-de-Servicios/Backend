@@ -17,7 +17,7 @@ public class Reserva {
     private Long idCliente;
     private LocalDate fecha;
     private LocalTime hora;
-    private String estado; // PENDIENTE, CONFIRMADA o CANCELADA
+    private String estado; // CONFIRMADA o CANCELADA (PENDIENTE solo en reservas antiguas; desde el Sprint 3 nacen CONFIRMADA)
     private LocalDateTime fechaCreacion;
 
     /** HU-24: UUID del cliente que agendó, tomado del token (nunca del cuerpo). Null en las reservas de Sprint 1. */
