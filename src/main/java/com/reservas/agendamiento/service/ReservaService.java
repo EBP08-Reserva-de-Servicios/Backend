@@ -1,5 +1,6 @@
 package com.reservas.agendamiento.service;
 
+import com.reservas.agendamiento.api.ReservaAgendada;
 import com.reservas.agendamiento.api.ReservaDetalle;
 import com.reservas.agendamiento.model.Disponibilidad;
 import com.reservas.agendamiento.model.Reserva;
@@ -8,6 +9,7 @@ import com.reservas.catalogo.api.ConsultaOferta;
 import com.reservas.catalogo.api.OfertaDetalle;
 import com.reservas.proveedores.api.ConsultaProfesionales;
 import com.reservas.proveedores.api.ProfesionalResumen;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +28,18 @@ public class ReservaService {
     private final DisponibilidadService disponibilidadService;
     private final ConsultaOferta consultaOferta;
     private final ConsultaProfesionales consultaProfesionales;
+    private final ApplicationEventPublisher eventos;   // HU-06: avisa "reserva agendada" sin conocer a notificaciones
 
     public ReservaService(ReservaRepository reservaRepository,
                           DisponibilidadService disponibilidadService,
                           ConsultaOferta consultaOferta,
-                          ConsultaProfesionales consultaProfesionales) {
+                          ConsultaProfesionales consultaProfesionales,
+                          ApplicationEventPublisher eventos) {
         this.reservaRepository = reservaRepository;
         this.disponibilidadService = disponibilidadService;
         this.consultaOferta = consultaOferta;
         this.consultaProfesionales = consultaProfesionales;
+        this.eventos = eventos;
     }
 
     /**
@@ -98,7 +103,12 @@ public class ReservaService {
         reserva.setProfesionalId(bloque.getProfesionalId());
         reserva.setEstado("CONFIRMADA");
         reserva.setFechaCreacion(LocalDateTime.now());
-        return reservaRepository.save(reserva);
+        Reserva guardada = reservaRepository.save(reserva);
+
+        // HU-06: la notificación a la empresa se crea DESPUÉS del commit (NotificacionService escucha el evento)
+        eventos.publishEvent(new ReservaAgendada(guardada.getClienteId(), guardada.getCodigo(), guardada.getFecha(),
+                guardada.getHora(), guardada.getIdServicioProveedor(), guardada.getProfesionalId()));
+        return guardada;
     }
 
     public Optional<Reserva> obtener(String codigo) {
