@@ -8,4 +8,7 @@ import java.util.Optional;
 public interface ConsultaProveedores {
 
     Optional<ProveedorDetalle> obtenerProveedor(Long nit);
+
+    /** HU-10: perfil completo del proveedor (con tipo de servicio y representante; sin clave). Vacío si no existe. */
+    Optional<ProveedorPerfil> obtenerPerfil(Long nit);
 }

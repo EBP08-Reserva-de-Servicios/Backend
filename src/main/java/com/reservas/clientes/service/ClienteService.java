@@ -1,5 +1,6 @@
 package com.reservas.clientes.service;
 
+import com.reservas.clientes.api.ClientePerfil;
 import com.reservas.clientes.api.ClienteResumen;
 import com.reservas.clientes.api.ConsultaClientes;
 import com.reservas.clientes.model.Cliente;
@@ -104,6 +105,17 @@ public class ClienteService implements ConsultaClientes, CuentaAutenticable {
     public Optional<ClienteResumen> obtenerCliente(String clienteId) {
         return clienteRepository.findById(clienteId)
                 .map(c -> new ClienteResumen(c.getApellidos(), c.getId(), c.getNombres()));
+    }
+
+    /** HU-10: perfil del cliente del token. Nunca devuelve la clave. */
+    @Override
+    public Optional<ClientePerfil> obtenerPerfil(String clienteId) {
+        if (clienteId == null) {
+            return Optional.empty();
+        }
+        return clienteRepository.findById(clienteId)
+                .map(c -> new ClientePerfil(c.getApellidos(), c.getCorreo(), c.getId(), c.getNombres(),
+                        c.getNumeroDocumento(), c.getTelefono(), c.getTipoDocumento()));
     }
 
     // ---------------------------------------------------------------
