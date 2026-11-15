@@ -96,7 +96,7 @@ public class ReservaService {
         }
 
         reserva.setProfesionalId(bloque.getProfesionalId());
-        reserva.setEstado("PENDIENTE");
+        reserva.setEstado("CONFIRMADA");
         reserva.setFechaCreacion(LocalDateTime.now());
         return reservaRepository.save(reserva);
     }
