@@ -14,6 +14,7 @@ public record ReservaAgendada(
         String codigo,
         LocalDate fecha,
         LocalTime hora,
+        LocalTime horaFin,
         Long idServicioProveedor,
         String profesionalId) {
 }

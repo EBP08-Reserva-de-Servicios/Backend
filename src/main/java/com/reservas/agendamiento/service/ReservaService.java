@@ -101,13 +101,14 @@ public class ReservaService {
         }
 
         reserva.setProfesionalId(bloque.getProfesionalId());
+        reserva.setHoraFin(bloque.getHoraFin());   // HU-26: la cita conserva la duración del bloque que se reservó
         reserva.setEstado("CONFIRMADA");
         reserva.setFechaCreacion(LocalDateTime.now());
         Reserva guardada = reservaRepository.save(reserva);
 
         // HU-06: la notificación a la empresa se crea DESPUÉS del commit (NotificacionService escucha el evento)
         eventos.publishEvent(new ReservaAgendada(guardada.getClienteId(), guardada.getCodigo(), guardada.getFecha(),
-                guardada.getHora(), guardada.getIdServicioProveedor(), guardada.getProfesionalId()));
+                guardada.getHora(), guardada.getHoraFin(), guardada.getIdServicioProveedor(), guardada.getProfesionalId()));
         return guardada;
     }
 
@@ -130,13 +131,21 @@ public class ReservaService {
                             : profesionales.computeIfAbsent(r.getProfesionalId(),
                                     id -> consultaProfesionales.obtenerProfesional(id).orElse(null));
                     return new ReservaDetalle(r.getCodigo(), r.getEstado(), r.getFecha(), r.getHora(),
-                            horaFin(r.getHora(), oferta), profesional, oferta);
+                            horaFin(r, oferta), profesional, oferta);
                 })
                 .toList();
     }
 
-    /** Hora de fin = inicio + duración de la oferta (o, si no tiene, la del servicio). Null si no se puede saber. */
-    private static LocalTime horaFin(LocalTime hora, OfertaDetalle oferta) {
+    /**
+     * Hora de fin de la cita. HU-26: la guardada al agendar (la del bloque reservado), así la cita conserva su
+     * duración aunque después cambie la de la oferta. Respaldo para reservas anteriores (hora_fin null):
+     * inicio + duración actual de la oferta (o, si no tiene, la del servicio). Null si no se puede saber.
+     */
+    private static LocalTime horaFin(Reserva r, OfertaDetalle oferta) {
+        if (r.getHoraFin() != null) {
+            return r.getHoraFin();
+        }
+        LocalTime hora = r.getHora();
         if (hora == null || oferta == null) {
             return null;
         }
