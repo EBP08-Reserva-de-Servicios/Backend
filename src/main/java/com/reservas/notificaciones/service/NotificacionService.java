@@ -1,17 +1,22 @@
 package com.reservas.notificaciones.service;
 
+import com.reservas.agendamiento.api.ConsultaReservas;
 import com.reservas.agendamiento.api.ReservaAgendada;
+import com.reservas.agendamiento.api.ReservaResumen;
 import com.reservas.catalogo.api.ConsultaOferta;
 import com.reservas.catalogo.api.OfertaDetalle;
 import com.reservas.clientes.api.ClientePerfil;
 import com.reservas.clientes.api.ConsultaClientes;
+import com.reservas.notificaciones.api.NotificacionDetalle;
 import com.reservas.notificaciones.model.Notificacion;
 import com.reservas.notificaciones.repository.NotificacionRepository;
 import com.reservas.proveedores.api.ConsultaProfesionales;
+import com.reservas.proveedores.api.ProfesionalResumen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -20,7 +25,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * HU-06 Notificar cita agendada: cada vez que un cliente agenda, la EMPRESA recibe una notificación.
@@ -31,6 +42,8 @@ import java.util.Optional;
  *  - si la notificación fallara (incluso al hacer commit), la cita del cliente NO se pierde y el
  *    cliente no recibe un error: solo queda el registro en el log.
  * Solo usa los api de agendamiento, clientes, catalogo y proveedores.
+ *
+ * HU-36 Ver notificaciones: listar las de la empresa, contar las no leídas y marcar una como leída.
  */
 @Service
 public class NotificacionService {
@@ -46,17 +59,20 @@ public class NotificacionService {
     private final ConsultaClientes consultaClientes;
     private final ConsultaOferta consultaOferta;
     private final ConsultaProfesionales consultaProfesionales;
+    private final ConsultaReservas consultaReservas;            // HU-36
     private final TransactionTemplate transaccionNueva;
 
     public NotificacionService(NotificacionRepository notificacionRepository,
                                ConsultaClientes consultaClientes,
                                ConsultaOferta consultaOferta,
                                ConsultaProfesionales consultaProfesionales,
+                               ConsultaReservas consultaReservas,
                                PlatformTransactionManager transacciones) {
         this.notificacionRepository = notificacionRepository;
         this.consultaClientes = consultaClientes;
         this.consultaOferta = consultaOferta;
         this.consultaProfesionales = consultaProfesionales;
+        this.consultaReservas = consultaReservas;
         this.transaccionNueva = new TransactionTemplate(transacciones);
         this.transaccionNueva.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -110,6 +126,83 @@ public class NotificacionService {
         return "¡Nueva cita agendada! " + nombreCliente + " identificado con " + documento
                 + " reservó " + servicio + conProfesional
                 + " para el " + fechaEnTexto(evento.fecha()) + " a las " + horaEnTexto(evento.hora());   // "a. m." ya cierra la frase
+    }
+
+    // ---------------------------------------------------------------
+    // HU-36 Ver notificaciones (la empresa = NIT del token)
+    // ---------------------------------------------------------------
+
+    /**
+     * Las notificaciones de la empresa, de la más reciente a la más antigua, con los datos de cada cita.
+     * Las reservas se piden en UNA consulta; clientes, profesionales y ofertas se piden una vez cada uno.
+     */
+    public List<NotificacionDetalle> listarDeEmpresa(Long nit) {
+        List<Notificacion> notificaciones = notificacionRepository.findByProveedorNitOrderByFechaCreacionDescIdDesc(nit);
+        if (notificaciones.isEmpty()) {
+            return List.of();
+        }
+        List<String> codigos = notificaciones.stream()
+                .map(Notificacion::getReservaCodigo).filter(c -> c != null).distinct().toList();
+        Map<String, ReservaResumen> reservas = consultaReservas.obtenerReservas(codigos).stream()
+                .collect(Collectors.toMap(ReservaResumen::codigo, Function.identity()));
+
+        Map<String, Optional<ClientePerfil>> clientes = new HashMap<>();
+        Map<String, Optional<ProfesionalResumen>> profesionales = new HashMap<>();
+        Map<Long, Optional<OfertaDetalle>> ofertas = new HashMap<>();
+
+        return notificaciones.stream()
+                .map(n -> new NotificacionDetalle(sinFraccion(n.getFechaCreacion()), n.getId(), n.isLeida(), n.getMensaje(),
+                        reservaDe(reservas.get(n.getReservaCodigo()), clientes, profesionales, ofertas), n.getTipo()))
+                .toList();
+    }
+
+    /** HU-36: cantidad sin leer (indicador de la barra de navegación). */
+    public long contarNoLeidas(Long nit) {
+        return notificacionRepository.countByProveedorNitAndLeidaFalse(nit);
+    }
+
+    /**
+     * HU-36: marca como leída una notificación DE ESA EMPRESA. false si no existe o es de otra empresa (404).
+     * Marcarla dos veces no es error.
+     */
+    @Transactional
+    public boolean marcarLeida(Long nit, Long id) {
+        Optional<Notificacion> n = (id == null) ? Optional.empty() : notificacionRepository.findByIdAndProveedorNit(id, nit);
+        if (n.isEmpty()) {
+            return false;
+        }
+        if (!n.get().isLeida()) {
+            n.get().setLeida(true);
+            notificacionRepository.save(n.get());
+        }
+        return true;
+    }
+
+    private NotificacionDetalle.Reserva reservaDe(ReservaResumen r,
+                                                  Map<String, Optional<ClientePerfil>> clientes,
+                                                  Map<String, Optional<ProfesionalResumen>> profesionales,
+                                                  Map<Long, Optional<OfertaDetalle>> ofertas) {
+        if (r == null) {
+            return null;                                        // la reserva ya no existe
+        }
+        NotificacionDetalle.Cliente cliente = (r.clienteId() == null) ? null
+                : clientes.computeIfAbsent(r.clienteId(), consultaClientes::obtenerPerfil)
+                        .map(c -> new NotificacionDetalle.Cliente(c.apellidos(), c.nombres(), c.numeroDocumento()))
+                        .orElse(null);
+        ProfesionalResumen profesional = (r.profesionalId() == null) ? null
+                : profesionales.computeIfAbsent(r.profesionalId(), consultaProfesionales::obtenerProfesional)
+                        .orElse(null);
+        String servicio = (r.idServicioProveedor() == null) ? null
+                : ofertas.computeIfAbsent(r.idServicioProveedor(), consultaOferta::obtenerOferta)
+                        .map(o -> o.servicio() == null ? null : o.servicio().nombre())
+                        .orElse(null);
+        return new NotificacionDetalle.Reserva(cliente, r.codigo(), r.estado(), r.fecha(), r.hora(), r.horaFin(),
+                profesional, servicio);
+    }
+
+    /** El contrato pide "AAAA-MM-DDTHH:mm:ss": la base guarda microsegundos, se recortan a segundos. */
+    private static LocalDateTime sinFraccion(LocalDateTime fecha) {
+        return (fecha == null) ? null : fecha.truncatedTo(ChronoUnit.SECONDS);
     }
 
     private static String nombreCompleto(String nombres, String apellidos) {

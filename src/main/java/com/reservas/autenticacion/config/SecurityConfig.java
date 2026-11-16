@@ -87,6 +87,10 @@ public class SecurityConfig {
 
                 // HU-10: el perfil propio exige sesión (cliente o proveedor). Va ANTES de la regla 7 (GET /api/** público)
                 .requestMatchers(HttpMethod.GET, "/api/perfil").authenticated()
+                
+                // HU-36: notificaciones de la empresa, solo PROVEEDOR (la empresa sale del token). Antes de la regla 7
+                .requestMatchers(HttpMethod.GET, "/api/notificaciones", "/api/notificaciones/no-leidas").hasRole("PROVEEDOR")
+                .requestMatchers(HttpMethod.POST, "/api/notificaciones/{id}/leida").hasRole("PROVEEDOR")
 
                 // 7) Lecturas públicas: buscar, disponibilidad, proveedores, servicios, ubicación, logo, foto, horario...
                 .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
