@@ -2,7 +2,9 @@ package com.reservas.proveedores.repository;
 
 import com.reservas.proveedores.api.ProfesionalResumen;
 import com.reservas.proveedores.model.Profesional;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,6 +19,15 @@ public interface ProfesionalRepository extends JpaRepository<Profesional, String
     List<Profesional> findByProveedorNitOrderByNombresAscApellidosAsc(Long proveedorNit);
 
     Optional<Profesional> findByIdAndProveedorNit(String id, Long proveedorNit);
+
+    /**
+     * HU-21: lo mismo, pero BLOQUEA la fila del profesional hasta que termine la transacción (SELECT ... FOR UPDATE).
+     * Dos cambios de horario del mismo profesional al mismo tiempo se atienden uno detrás del otro:
+     * así la validación de cruces no se basa en datos que otro está cambiando (incidente del doble clic, 22 oct).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Profesional p where p.id = :id and p.proveedorNit = :nit")
+    Optional<Profesional> bloquearPorIdYProveedor(@Param("id") String id, @Param("nit") Long nit);
 
     /** HU-26: profesionales que atienden una oferta (para regenerar sus bloques si cambia la duración). */
     @Query("select p from Profesional p where :ofertaId member of p.servicioProveedorIds")
