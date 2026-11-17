@@ -11,6 +11,9 @@ public interface ServicioProveedorRepository extends JpaRepository<ServicioProve
     /** HU-19: ofertas publicadas por un proveedor. */
     List<ServicioProveedor> findByProveedorNit(Long proveedorNit);
 
+    /** Orden estable (por id): al editar una oferta su tarjeta no cambia de lugar en "Gestionar servicios". */
+    List<ServicioProveedor> findByProveedorNitOrderByIdAsc(Long proveedorNit);
+
     /** HU-26: la oferta solo se edita si es de ese proveedor. */
     Optional<ServicioProveedor> findByIdAndProveedorNit(Long id, Long proveedorNit);
 }

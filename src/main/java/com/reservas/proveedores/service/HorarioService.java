@@ -163,6 +163,15 @@ public class HorarioService {
         }
     }
 
+    /**
+     * HU-20: cambiaron los servicios que presta el profesional. Se regeneran sus bloques libres con los
+     * servicios nuevos; los bloques reservados (las citas) se conservan. Corre en la transacción de la edición.
+     */
+    @Transactional
+    public void alCambiarServiciosDelProfesional(Profesional profesional) {
+        regenerarDisponibilidad(profesional);
+    }
+
     // ---- Auxiliares ----
 
     /** Vuelve a generar los bloques futuros del profesional con su horario actual. */

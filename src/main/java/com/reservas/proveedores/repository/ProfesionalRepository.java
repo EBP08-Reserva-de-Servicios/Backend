@@ -13,6 +13,9 @@ public interface ProfesionalRepository extends JpaRepository<Profesional, String
 
     List<Profesional> findByProveedorNit(Long proveedorNit);
 
+    /** Lista del proveedor en un orden estable (por nombre): así una tarjeta no cambia de lugar al editarla. */
+    List<Profesional> findByProveedorNitOrderByNombresAscApellidosAsc(Long proveedorNit);
+
     Optional<Profesional> findByIdAndProveedorNit(String id, Long proveedorNit);
 
     /** HU-26: profesionales que atienden una oferta (para regenerar sus bloques si cambia la duración). */
@@ -36,4 +39,14 @@ public interface ProfesionalRepository extends JpaRepository<Profesional, String
     boolean existsByProveedorNitAndNombresIgnoreCaseAndApellidosIgnoreCase(Long proveedorNit, String nombres, String apellidos);
 
     boolean existsByProveedorNitAndTelefono(Long proveedorNit, String telefono);
+
+    // HU-20: los mismos duplicados al editar, comparando con los DEMÁS profesionales (sin contarse a sí mismo)
+    boolean existsByNumeroDocumentoAndIdNot(String numeroDocumento, String id);
+
+    boolean existsByCorreoAndIdNot(String correo, String id);
+
+    boolean existsByProveedorNitAndNombresIgnoreCaseAndApellidosIgnoreCaseAndIdNot(
+            Long proveedorNit, String nombres, String apellidos, String id);
+
+    boolean existsByProveedorNitAndTelefonoAndIdNot(Long proveedorNit, String telefono, String id);
 }
