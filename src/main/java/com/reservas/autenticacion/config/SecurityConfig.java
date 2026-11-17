@@ -62,6 +62,8 @@ public class SecurityConfig {
                         "/api/proveedores/{nit}/profesionales/{profesionalId}/horario/{franjaId}").access(proveedorDelNit())
                 // HU-26: editar una oferta propia
                 .requestMatchers(HttpMethod.PUT, "/api/proveedores/{nit}/servicios/{id}").access(proveedorDelNit())
+                // HU-20: editar un profesional propio
+                .requestMatchers(HttpMethod.PUT, "/api/proveedores/{nit}/profesionales/{profesionalId}").access(proveedorDelNit())
 
                 // 3) Agendar (HU-24): solo CLIENTE (contraer). Sin token -> 401; token de PROVEEDOR -> 403
                 .requestMatchers(HttpMethod.POST, "/api/reservas").hasRole("CLIENTE")

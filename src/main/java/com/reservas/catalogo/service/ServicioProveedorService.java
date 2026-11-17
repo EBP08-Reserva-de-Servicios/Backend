@@ -139,7 +139,7 @@ public class ServicioProveedorService implements ConsultaOferta, VerificadorOfer
     /** HU-19 escenario 3: catálogo de servicios del proveedor. */
     public List<OfertaDetalle> listarDelProveedor(Long nit) {
         verificarProveedor(nit);
-        return servicioProveedorRepository.findByProveedorNit(nit).stream().map(this::aDetalle).toList();
+        return servicioProveedorRepository.findByProveedorNitOrderByIdAsc(nit).stream().map(this::aDetalle).toList();
     }
 
     private void verificarProveedor(Long nit) {

@@ -8,9 +8,11 @@ import com.reservas.proveedores.model.Profesional;
 import com.reservas.proveedores.repository.ProfesionalRepository;
 import com.reservas.proveedores.repository.ProveedorRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -18,7 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * HU-29: registro y consulta de profesionales de un proveedor.
+ * HU-29: registro y consulta de profesionales de un proveedor. HU-20: edición con las mismas reglas.
  * Mismo patrón de A1/O1: obligatorios y formatos (400) -> duplicados (409) -> guardar.
  * También implementa ConsultaProfesionales (api) para que agendamiento muestre el profesional de cada bloque.
  */
@@ -34,26 +36,97 @@ public class ProfesionalService implements ConsultaProfesionales {
     private final ProfesionalRepository profesionalRepository;
     private final ProveedorRepository proveedorRepository;
     private final VerificadorOfertas verificadorOfertas;          // lo implementa catalogo
+    private final HorarioService horarioService;                  // HU-20: regenerar bloques si cambian los servicios
+
+    /** Datos ya validados: los servicios sin repetidos y la foto decodificada (null si no se envió). */
+    private record DatosValidados(List<Long> servicioProveedorIds, byte[] foto, String fotoTipo) {
+    }
 
     public ProfesionalService(ProfesionalRepository profesionalRepository,
                               ProveedorRepository proveedorRepository,
-                              VerificadorOfertas verificadorOfertas) {
+                              VerificadorOfertas verificadorOfertas,
+                              HorarioService horarioService) {
         this.profesionalRepository = profesionalRepository;
         this.proveedorRepository = proveedorRepository;
         this.verificadorOfertas = verificadorOfertas;
+        this.horarioService = horarioService;
     }
 
     public ProfesionalDetalle registrar(Long nit, Profesional p, String fotoDataUrl, List<Long> servicioProveedorIds) {
         verificarProveedor(nit);
+        normalizar(p);
 
+        // 1) Obligatorios y formatos (400)   2) Duplicados (409)
+        DatosValidados datos = validar(nit, p, fotoDataUrl, servicioProveedorIds);
+        verificarDuplicados(nit, p, null);
+
+        // 3) Guardar
+        p.setProveedorNit(nit);
+        p.setFoto(datos.foto());
+        p.setFotoTipo(datos.fotoTipo());
+        p.setServicioProveedorIds(new ArrayList<>(datos.servicioProveedorIds()));
+        return aDetalle(profesionalRepository.save(p));
+    }
+
+    /**
+     * HU-20: edita un profesional del proveedor con el mismo cuerpo del registro.
+     * foto = null (o vacía) conserva la foto actual. Los duplicados se comparan con los DEMÁS profesionales.
+     * Si cambian los servicios que presta, se regeneran sus bloques libres (las citas se conservan),
+     * todo en la misma transacción: si la regeneración falla, la edición tampoco se guarda.
+     */
+    @Transactional
+    public ProfesionalDetalle editar(Long nit, String id, Profesional cambios, String fotoDataUrl,
+                                     List<Long> servicioProveedorIds) {
+        verificarProveedor(nit);
+        Profesional actual = profesionalRepository.findByIdAndProveedorNit(id, nit)
+                .orElseThrow(() -> new RegistroProfesionalException(RegistroProfesionalException.Tipo.NO_ENCONTRADO,
+                        List.of("Profesional no encontrado.")));
+        normalizar(cambios);
+
+        DatosValidados datos = validar(nit, cambios, fotoDataUrl, servicioProveedorIds);
+        verificarDuplicados(nit, cambios, id);
+
+        boolean cambiaronServicios = !new HashSet<>(actual.getServicioProveedorIds())
+                .equals(new HashSet<>(datos.servicioProveedorIds()));
+
+        actual.setTipoDocumento(cambios.getTipoDocumento());
+        actual.setNumeroDocumento(cambios.getNumeroDocumento());
+        actual.setNombres(cambios.getNombres());
+        actual.setApellidos(cambios.getApellidos());
+        actual.setCorreo(cambios.getCorreo());
+        actual.setTelefono(cambios.getTelefono());
+        if (datos.foto() != null) {                                    // sin foto nueva: se conserva la actual
+            actual.setFoto(datos.foto());
+            actual.setFotoTipo(datos.fotoTipo());
+        }
+        actual.setServicioProveedorIds(new ArrayList<>(datos.servicioProveedorIds()));
+        Profesional guardado = profesionalRepository.save(actual);
+
+        if (cambiaronServicios) {
+            horarioService.alCambiarServiciosDelProfesional(guardado);
+        }
+        return aDetalle(guardado);
+    }
+
+    public List<ProfesionalDetalle> listar(Long nit) {
+        verificarProveedor(nit);
+        return profesionalRepository.findByProveedorNitOrderByNombresAscApellidosAsc(nit).stream()
+                .map(this::aDetalle).toList();
+    }
+
+    // ---- Validaciones compartidas por registrar (HU-29) y editar (HU-20) ----
+
+    private static void normalizar(Profesional p) {
         p.setNombres(limpiar(p.getNombres()));
         p.setApellidos(limpiar(p.getApellidos()));
         p.setTipoDocumento(vacio(p.getTipoDocumento()) ? null : p.getTipoDocumento().trim());
         p.setNumeroDocumento(limpiar(p.getNumeroDocumento()));
         p.setCorreo(limpiar(p.getCorreo()));
         p.setTelefono(normalizarTelefono(p.getTelefono()));
+    }
 
-        // 1) Obligatorios y formatos (todos juntos)
+    /** Obligatorios y formatos, todos juntos (400). Devuelve los servicios sin repetidos y la foto decodificada. */
+    private DatosValidados validar(Long nit, Profesional p, String fotoDataUrl, List<Long> servicioProveedorIds) {
         List<String> errores = new ArrayList<>();
         if (vacio(p.getNombres()))         errores.add("El nombre es obligatorio.");
         if (vacio(p.getApellidos()))       errores.add("El apellido es obligatorio.");
@@ -100,37 +173,38 @@ public class ProfesionalService implements ConsultaProfesionales {
         if (!errores.isEmpty()) {
             throw new RegistroProfesionalException(RegistroProfesionalException.Tipo.INVALIDO, errores);
         }
+        return new DatosValidados(ids, foto, fotoTipo);
+    }
 
-        // 2) Duplicados (textos exactos del prototipo, sin punto final)
+    /**
+     * Duplicados (409, textos exactos del prototipo, sin punto final).
+     * excluirId = null al registrar; al editar, el id del profesional (no se compara consigo mismo).
+     */
+    private void verificarDuplicados(Long nit, Profesional p, String excluirId) {
+        boolean editando = excluirId != null;
         List<String> duplicados = new ArrayList<>();
-        if (profesionalRepository.existsByNumeroDocumento(p.getNumeroDocumento())) {
+        if (editando ? profesionalRepository.existsByNumeroDocumentoAndIdNot(p.getNumeroDocumento(), excluirId)
+                     : profesionalRepository.existsByNumeroDocumento(p.getNumeroDocumento())) {
             duplicados.add("Este profesional ya está registrado con ese número de documento");
         }
-        if (profesionalRepository.existsByCorreo(p.getCorreo())) {
+        if (editando ? profesionalRepository.existsByCorreoAndIdNot(p.getCorreo(), excluirId)
+                     : profesionalRepository.existsByCorreo(p.getCorreo())) {
             duplicados.add("Este correo ya está en uso");
         }
-        if (profesionalRepository.existsByProveedorNitAndNombresIgnoreCaseAndApellidosIgnoreCase(
-                nit, p.getNombres(), p.getApellidos())) {
+        if (editando
+                ? profesionalRepository.existsByProveedorNitAndNombresIgnoreCaseAndApellidosIgnoreCaseAndIdNot(
+                        nit, p.getNombres(), p.getApellidos(), excluirId)
+                : profesionalRepository.existsByProveedorNitAndNombresIgnoreCaseAndApellidosIgnoreCase(
+                        nit, p.getNombres(), p.getApellidos())) {
             duplicados.add("Ya existe un profesional con este nombre");
         }
-        if (profesionalRepository.existsByProveedorNitAndTelefono(nit, p.getTelefono())) {
+        if (editando ? profesionalRepository.existsByProveedorNitAndTelefonoAndIdNot(nit, p.getTelefono(), excluirId)
+                     : profesionalRepository.existsByProveedorNitAndTelefono(nit, p.getTelefono())) {
             duplicados.add("Este teléfono ya está en uso");
         }
         if (!duplicados.isEmpty()) {
             throw new RegistroProfesionalException(RegistroProfesionalException.Tipo.DUPLICADO, duplicados);
         }
-
-        // 3) Guardar
-        p.setProveedorNit(nit);
-        p.setFoto(foto);
-        p.setFotoTipo(fotoTipo);
-        p.setServicioProveedorIds(new ArrayList<>(ids));
-        return aDetalle(profesionalRepository.save(p));
-    }
-
-    public List<ProfesionalDetalle> listar(Long nit) {
-        verificarProveedor(nit);
-        return profesionalRepository.findByProveedorNit(nit).stream().map(this::aDetalle).toList();
     }
 
     // ---- Contrato ConsultaProfesionales (lo usa agendamiento) ----

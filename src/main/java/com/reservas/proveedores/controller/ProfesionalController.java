@@ -46,6 +46,22 @@ public class ProfesionalController {
         }
     }
 
+    /**
+     * HU-20: editar un profesional propio con el mismo cuerpo del registro (foto = null conserva la actual).
+     * 200 actualizado; 400 datos inválidos; 409 duplicado con OTRO profesional; 404 profesional o proveedor inexistente.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> editar(@PathVariable Long nit, @PathVariable String id,
+                                    @RequestBody ProfesionalSolicitud solicitud) {
+        try {
+            ProfesionalDetalle editado = profesionalService.editar(
+                    nit, id, solicitud.aEntidad(), solicitud.foto(), solicitud.servicioProveedorIds());
+            return ResponseEntity.ok(editado);
+        } catch (RegistroProfesionalException e) {
+            return error(e);
+        }
+    }
+
     /** Imagen de la foto del profesional. 404 si no tiene foto. */
     @GetMapping("/{id}/foto")
     public ResponseEntity<byte[]> foto(@PathVariable Long nit, @PathVariable String id) {
